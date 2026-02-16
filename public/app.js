@@ -1,0 +1,154 @@
+import { elements } from "./js/dom.js";
+import { state } from "./js/state.js";
+import { analyzeImage } from "./js/api.js";
+import { renderCurrentMode } from "./js/render.js";
+import { dismissDisclaimerModal, insertPrintNotes, removePrintNotes } from "./js/ui.js";
+
+/* Leaflet Marker-Icons: Auto-Detection deaktivieren und Pfade für self-hosted Build setzen */
+if (typeof L !== "undefined" && L.Icon && L.Icon.Default) {
+  delete L.Icon.Default.prototype._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "/lib/leaflet/images/marker-icon-2x.png",
+    iconUrl: "/lib/leaflet/images/marker-icon.png",
+    shadowUrl: "/lib/leaflet/images/marker-shadow.png",
+  });
+}
+
+/* ── Foto-Vorschau + Auto-Start ── */
+
+function handleNewFile(file) {
+  /* Laufende Analyse abbrechen */
+  if (state.currentAbortController) {
+    state.currentAbortController.abort();
+    state.currentAbortController = null;
+  }
+  state.isAnalyzing = false;
+
+  /* Offenes Disclaimer-Modal schließen (BUG-004) */
+  dismissDisclaimerModal();
+
+  /* Laufendes Geocoding abbrechen (BUG-005) */
+  if (state.geocodeAbortController) {
+    state.geocodeAbortController.abort();
+    state.geocodeAbortController = null;
+  }
+  state.pendingGeocode = null;
+
+  const prev = elements.imagePreview.querySelector("img");
+  if (prev) URL.revokeObjectURL(prev.src);
+
+  const url = URL.createObjectURL(file);
+  const img = document.createElement("img");
+  img.src = url;
+  img.alt = "Vorschau";
+  elements.imagePreview.innerHTML = "";
+  elements.imagePreview.appendChild(img);
+
+  state.lastFile = file;
+  state.lastPrepared = null;
+  state.lastData = null;
+  analyzeImage();
+}
+
+elements.fileInput.addEventListener("change", () => {
+  const file = elements.fileInput.files[0];
+  if (!file) return;
+  handleNewFile(file);
+});
+
+/* ── Drag & Drop (auch für macOS Fotos-App) ── */
+
+const dropTarget = document.querySelector(".file-drop");
+
+["dragenter", "dragover"].forEach((evt) => {
+  dropTarget.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropTarget.classList.add("drag-over");
+  });
+});
+
+["dragleave", "drop"].forEach((evt) => {
+  dropTarget.addEventListener(evt, (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropTarget.classList.remove("drag-over");
+  });
+});
+
+dropTarget.addEventListener("drop", (e) => {
+  const file = e.dataTransfer?.files?.[0];
+  if (file && file.type.startsWith("image/")) {
+    handleNewFile(file);
+  }
+});
+
+/* Globaler dragover-Schutz: verhindert Navigation bei Drop außerhalb der Zone */
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => e.preventDefault());
+
+/* ── Toggle-Wechsel: Sofort umschalten ohne neuen API-Call ── */
+
+elements.biasSwitch.addEventListener("change", () => {
+  if (state.lastData) {
+    renderCurrentMode(state.lastData);
+  }
+});
+
+/* Text-Labels klickbar — schalten direkt um (aber nicht wenn Info-Icon geklickt) */
+document.querySelectorAll(".bias-opt").forEach((opt) => {
+  opt.style.cursor = "pointer";
+  opt.addEventListener("click", (e) => {
+    if (e.target.closest(".info-icon")) return;
+    const wantBoost = opt.dataset.mode === "boost";
+    if (elements.biasSwitch.checked !== wantBoost) {
+      elements.biasSwitch.checked = wantBoost;
+      elements.biasSwitch.dispatchEvent(new Event("change"));
+    }
+  });
+});
+
+/* Info-Icon Tooltip: Nur einer gleichzeitig, Position am Viewport ausrichten */
+document.querySelectorAll(".info-icon").forEach((icon) => {
+  icon.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const wasOpen = icon.classList.contains("tooltip-open");
+    /* Alle schließen */
+    document.querySelectorAll(".info-icon.tooltip-open").forEach((el) => el.classList.remove("tooltip-open"));
+    if (!wasOpen) {
+      icon.classList.add("tooltip-open");
+      /* Tooltip vertikal positionieren */
+      const tip = icon.querySelector(".tooltip");
+      if (tip) {
+        tip.style.top = "0px";
+        void tip.offsetHeight; /* Reflow erzwingen damit offsetHeight stimmt */
+        const rect = icon.getBoundingClientRect();
+        const tipH = tip.offsetHeight;
+        let top = rect.top - tipH - 12;
+        const below = top < 8;
+        /* Falls Tooltip oben rausfällt → unter dem Icon anzeigen */
+        if (below) top = rect.bottom + 12;
+        tip.style.top = top + "px";
+        tip.classList.toggle("below", below);
+      }
+    }
+    /* Desktop: Hover auf dem anderen Icon unterdrücken solange einer offen ist */
+    document.querySelectorAll(".info-icon").forEach((el) => {
+      el.classList.toggle("tooltip-suppress", el !== icon && !wasOpen);
+    });
+  });
+});
+document.addEventListener("click", () => {
+  document.querySelectorAll(".info-icon.tooltip-open").forEach((el) => el.classList.remove("tooltip-open"));
+  document.querySelectorAll(".info-icon.tooltip-suppress").forEach((el) => el.classList.remove("tooltip-suppress"));
+});
+
+/* ── PDF-Export ── */
+
+elements.exportPdf.addEventListener("click", () => {
+  insertPrintNotes();
+  window.print();
+  setTimeout(removePrintNotes, 1000);
+});
+
+window.addEventListener("afterprint", removePrintNotes);

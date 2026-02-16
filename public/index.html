@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>malziME &mdash; Was KI aus deinem Foto liest | Workshop-Tool f&uuml;r Medienkompetenz</title>
+    <meta name="description" content="Lade ein Foto hoch und sieh, was Algorithmen aus einem einzigen Bild &uuml;ber dich herauslesen: Alter, Einkommen, Interessen, Werbeprofil. Kostenloses Lern-Tool f&uuml;r Workshops zu Datenschutz und Medienkompetenz." />
+    <meta name="keywords" content="Medienkompetenz, Datenschutz, KI-Analyse, Safer Internet, Workshop, Schule, Jugendliche, Algorithmus, Bias, Profiling, Datenbroker, DSGVO" />
+    <meta name="author" content="malziland &ndash; digitale Wissensgestaltung" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://malzi.me/" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="malziME &mdash; Was KI aus deinem Foto liest" />
+    <meta property="og:description" content="Ein Foto. Ein Profil. So kategorisieren dich Algorithmen. Kostenloses Workshop-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung." />
+    <meta property="og:url" content="https://malzi.me/" />
+    <meta property="og:site_name" content="malziME" />
+    <meta property="og:locale" content="de_AT" />
+    <meta property="og:image" content="https://malzi.me/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:type" content="image/png" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="malziME &mdash; Was KI aus deinem Foto liest" />
+    <meta name="twitter:description" content="Lade ein Foto hoch und sieh, was Algorithmen &uuml;ber dich behaupten. Lern-Tool f&uuml;r Workshops zu Datenschutz und Medienkompetenz." />
+    <meta name="twitter:image" content="https://malzi.me/og-image.png" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "malziME",
+      "url": "https://malzi.me/",
+      "description": "KI-basiertes Lern-Tool f\u00fcr Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt, was Algorithmen aus einem einzigen Foto \u00fcber eine Person behaupten k\u00f6nnten.",
+      "applicationCategory": "EducationalApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "malziland \u2013 digitale Wissensgestaltung e.U.",
+        "url": "https://malziland.at"
+      },
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student",
+        "suggestedMinAge": 10
+      },
+      "inLanguage": "de",
+      "keywords": "Medienkompetenz, Datenschutz, KI, Algorithmus, Bias, Profiling, Workshop, Safer Internet"
+    }
+    </script>
+
+    <link rel="icon" href="./favicon.ico" sizes="48x48" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+
+    <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
+    <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
+    <link rel="stylesheet" href="./lib/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="./styles.css?v=2026021609" />
+  </head>
+  <body>
+    <div class="scan-lines"></div>
+
+    <main class="container">
+      <!-- Print-Disclaimer (nur im Druck, nur Seite 1) -->
+      <div class="print-disclaimer">
+        <strong>malziME</strong> ist ein Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung. Die KI-Profile sind erfunden und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; nichts davon ist wahr oder bewiesen.
+      </div>
+
+      <header class="hero">
+        <div class="hero-badge">
+          <span class="pulse"></span>
+          <span class="badge-text">SYSTEM AKTIV</span>
+        </div>
+        <h1>Wir sehen mehr als dein Foto.</h1>
+        <p class="lead">Lade ein Bild hoch. Die KI erstellt in Sekunden ein komplettes Profil &uuml;ber dich &mdash; aus einem einzigen Foto.</p>
+      </header>
+
+      <section class="upload-section">
+        <label class="file-drop" for="fileInput">
+          <input id="fileInput" type="file" accept="image/*" />
+          <div class="drop-content">
+            <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+            <span class="drop-label">Foto ausw&auml;hlen oder hierhin ziehen</span>
+            <span class="drop-hint">JPEG, PNG, WEBP &middot; max 20 MB</span>
+          </div>
+        </label>
+        <div id="imagePreview" class="image-preview"></div>
+        <div class="hp-field" aria-hidden="true">
+          <label for="website">Website</label>
+          <input type="text" id="website" name="website" tabindex="-1" autocomplete="off" />
+        </div>
+      </section>
+
+      <!-- Bias Toggle -->
+      <div class="bias-toggle-wrap" id="biasToggleWrap">
+        <div class="bias-toggle">
+          <span class="bias-opt" data-mode="normal">
+            <span class="info-icon">
+              <span class="info-i">i</span>
+              <span class="tooltip">Sachliche Einsch&auml;tzung &mdash; so wie echte Algorithmen dich im Hintergrund kategorisieren. Direkt, konkret, ohne &Uuml;bertreibung.</span>
+            </span>
+            Seri&ouml;se Analyse
+          </span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="biasSwitch" />
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
+          <span class="bias-opt boost" data-mode="boost">
+            Beast Mode
+            <span class="info-icon">
+              <span class="info-i">i</span>
+              <span class="tooltip">Maximale &Uuml;bertreibung &mdash; zeigt wie ein skrupelloser Algorithmus dich ausnutzen w&uuml;rde. Provokant, pers&ouml;nlich, schonungslos. Nichts davon ist wahr &mdash; aber so denken Werbemaschinen.</span>
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Scan-Animation -->
+      <div id="scanAnim" class="scan-anim">
+        <div class="scan-eye">
+          <svg viewBox="0 0 64 64" fill="none">
+            <ellipse cx="32" cy="32" rx="28" ry="18" stroke="currentColor" stroke-width="2"/>
+            <circle cx="32" cy="32" r="10" stroke="currentColor" stroke-width="2"/>
+            <circle cx="32" cy="32" r="4" fill="currentColor"/>
+          </svg>
+        </div>
+        <div class="scan-text" id="scanText">Scanning&hellip;</div>
+        <div class="scan-bar"><div class="scan-fill"></div></div>
+      </div>
+
+      <section class="results" id="resultsPanel">
+        <div id="status" class="status"></div>
+        <div id="simulation" class="simulation"></div>
+        <div id="privacy" class="privacy-grid"></div>
+        <div id="gpsMap" class="gps-map"></div>
+        <div id="facts" class="facts-grid"></div>
+        <div id="targeting" class="targeting-grid"></div>
+        <div id="dataValue" class="data-value-section"></div>
+        <div class="export-wrap">
+          <button id="exportPdf" class="export-btn" style="display:none">
+            <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 12l-4-4m4 4l4-4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
+            Ergebnis als PDF speichern
+          </button>
+        </div>
+      </section>
+
+      <div class="disclaimer" style="margin-top:0; margin-bottom:28px">
+        <p><strong>malziME</strong> ist ein Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung. Die KI-Profile sind erfunden und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; nichts davon ist wahr oder bewiesen.</p>
+        <p style="margin-top:8px">F&uuml;r Workshops k&ouml;nnen auch Stock-Fotos oder &auml;ltere Bilder verwendet werden. Kein hochgeladenes Bild wird gespeichert oder ist nach der Analyse abrufbar.</p>
+      </div>
+
+    </main>
+
+    <div class="opensource-box">
+      <a href="https://github.com/malziland/malzime" target="_blank" rel="noopener" class="opensource-link">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Open Source auf GitHub
+      </a>
+    </div>
+
+    <div class="support-box">
+      <p class="support-headline">Keine Paywall. Kein Bullshit.</p>
+      <p class="support-text">Und du h&auml;ltst es am Laufen.</p>
+      <a href="https://buymeacoffee.com/malzime" target="_blank" rel="noopener" class="support-btn">Jetzt Projekt unterst&uuml;tzen</a>
+    </div>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span class="footer-copy">&copy; 2026 malziME &bull; powered by malziland</span>
+        <span class="footer-sep">&middot;</span>
+        <a href="/impressum">Impressum</a>
+        <span class="footer-sep">&middot;</span>
+        <a href="/datenschutz">Datenschutz</a>
+      </div>
+    </footer>
+
+    <!-- Disclaimer-Modal -->
+    <div class="modal-overlay" id="disclaimerModal">
+      <div class="modal-box">
+        <div class="modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M3.6 19.8h16.8a1.2 1.2 0 001.04-1.8L13.04 4.2a1.2 1.2 0 00-2.08 0L2.56 18a1.2 1.2 0 001.04 1.8z"/></svg>
+        </div>
+        <h2>Wichtiger Hinweis</h2>
+        <p>malziME ist ein <strong>Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung</strong>.</p>
+        <p>Die KI-Profile sind <strong>erfunden</strong> und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; <strong>nichts davon ist wahr oder bewiesen</strong>.</p>
+        <div class="modal-divider"></div>
+        <button class="modal-btn" id="disclaimerConfirm">Verstanden &ndash; Ergebnis anzeigen</button>
+      </div>
+    </div>
+
+    <script src="./lib/leaflet/leaflet.js"></script>
+    <script type="module" src="./app.js?v=2026021609"></script>
+  </body>
+</html>

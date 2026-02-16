@@ -1,0 +1,5 @@
+node_modules/
+functions/
+public/lib/
+public/fonts/
+package-lock.json

@@ -1,0 +1,7 @@
+exifr (lite ESM bundle)
+Source: https://github.com/MikeKovarik/exifr
+License: MIT
+(c) Mike Kovarik
+
+Self-hosted copy — no external CDN requests.
+Note: Exact version not embedded in minified build.

@@ -1,0 +1,31 @@
+{
+  "name": "bias-demo-functions",
+  "private": true,
+  "engines": {
+    "node": "24"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest --forceExit --detectOpenHandles",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.10.0",
+    "@google-cloud/vision": "^5.3.4",
+    "busboy": "^1.6.0",
+    "firebase-admin": "^13.6.1",
+    "firebase-functions": "^7.0.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "jest": "^30.2.0",
+    "prettier": "^3.8.1"
+  }
+}

@@ -1,0 +1,24 @@
+const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+const RATE_LIMIT = 200;
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+const DESCRIBE_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-001"];
+const PROFILE_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-001"];
+
+const API_TIMEOUT_MS = 45000;
+
+/* BUG-003: Globales Budget pro Request — verhindert dass die Summe aller
+   internen Timeouts das Cloud-Function-Limit (120s) übersteigt. */
+const REQUEST_BUDGET_MS = 90000;
+
+module.exports = {
+  MAX_UPLOAD_BYTES,
+  RATE_LIMIT,
+  RATE_WINDOW_MS,
+  ALLOWED_MIME,
+  DESCRIBE_MODELS,
+  PROFILE_MODELS,
+  API_TIMEOUT_MS,
+  REQUEST_BUDGET_MS,
+};
