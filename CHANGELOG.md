@@ -18,6 +18,11 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 ### Barrierefreiheit
 
 - `aria-live="polite"` auf Status, Scan-Animation und Ergebnis-Bereich — Screenreader lesen Aenderungen vor
+- **Disclaimer-Modal**: Focus-Trap, Escape zum Schliessen, Focus-Wiederherstellung, `role="dialog"` + `aria-modal`
+- **Bias-Toggle**: `aria-label` fuer Screenreader
+- **Info-Tooltips**: Per Tastatur (Tab + Enter/Space) erreichbar, `role="button"`
+- **Dekorative SVGs**: Mit `aria-hidden="true"` vor Screenreadern versteckt
+- **Reduzierte Bewegung**: `prefers-reduced-motion` deaktiviert alle Animationen fuer bewegungsempfindliche User
 
 ### Sicherheit
 
