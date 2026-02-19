@@ -137,13 +137,13 @@
             <circle cx="32" cy="32" r="4" fill="currentColor"/>
           </svg>
         </div>
-        <div class="scan-text" id="scanText" data-i18n="scan.text">Scanning&hellip;</div>
+        <div class="scan-text" id="scanText" data-i18n="scan.text" aria-live="polite">Scanning&hellip;</div>
         <div class="scan-bar"><div class="scan-fill"></div></div>
       </div>
 
       <section class="results" id="resultsPanel">
-        <div id="status" class="status"></div>
-        <div id="simulation" class="simulation"></div>
+        <div id="status" class="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="simulation" class="simulation" aria-live="polite"></div>
         <div id="privacy" class="privacy-grid"></div>
         <div id="gpsMap" class="gps-map"></div>
         <div id="facts" class="facts-grid"></div>

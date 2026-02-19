@@ -22,6 +22,7 @@ jobs:
           cache-dependency-path: functions/package-lock.json
 
       - run: npm ci
+      - run: npm audit --audit-level=critical
 
       - run: npm run lint
       - run: npm run format:check
