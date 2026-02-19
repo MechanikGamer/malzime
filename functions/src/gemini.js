@@ -62,7 +62,14 @@ async function describeImage(imageBuffer, mimeType, remainingBudget, lang) {
     try {
       const budget = remainingBudget ? remainingBudget() : undefined;
       if (budget != null && budget <= 0) break;
-      const result = await describeImageWithModel(vertexAI, modelName, imageBuffer, mimeType, prompts.describePrompt, budget);
+      const result = await describeImageWithModel(
+        vertexAI,
+        modelName,
+        imageBuffer,
+        mimeType,
+        prompts.describePrompt,
+        budget
+      );
       if (result.text) {
         console.log(JSON.stringify({ step: "describe", model: modelName, status: "ok", length: result.text.length }));
         return result.text;
@@ -273,8 +280,22 @@ async function generateBothProfiles(imageDescription, visionLabels, exifData, pr
   const labelsContext = visionLabels.length > 0 ? `\n${prompts.labelVisionLabels}: ${visionLabels.join(", ")}` : "";
   const privacyContext = privacyRisks.length > 0 ? `\n${prompts.labelPrivacyRisks}: ${privacyRisks.join("; ")}` : "";
 
-  const normalPrompt = buildPrompt(prompts, prompts.systemNormal, imageDescription, labelsContext, exifContext, privacyContext);
-  const boostPrompt = buildPrompt(prompts, prompts.systemBoost, imageDescription, labelsContext, exifContext, privacyContext);
+  const normalPrompt = buildPrompt(
+    prompts,
+    prompts.systemNormal,
+    imageDescription,
+    labelsContext,
+    exifContext,
+    privacyContext
+  );
+  const boostPrompt = buildPrompt(
+    prompts,
+    prompts.systemBoost,
+    imageDescription,
+    labelsContext,
+    exifContext,
+    privacyContext
+  );
 
   const [normal, boost] = await Promise.all([
     runProfileWithFallback(vertexAI, normalPrompt, 0.7, "normal", remainingBudget),
