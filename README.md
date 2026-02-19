@@ -5,6 +5,9 @@
 ![Lighthouse Accessibility](https://img.shields.io/badge/Accessibility-100-brightgreen?logo=lighthouse)
 ![Lighthouse Best Practices](https://img.shields.io/badge/Best_Practices-100-brightgreen?logo=lighthouse)
 ![Lighthouse SEO](https://img.shields.io/badge/SEO-100-brightgreen?logo=lighthouse)
+![License: MIT](https://img.shields.io/badge/License-MIT-blue)
+![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=node.js&logoColor=white)
+![Firebase Hosting](https://img.shields.io/badge/Firebase-Hosting-FFCA28?logo=firebase&logoColor=black)
 
 > **[malzi.me](https://malzi.me)** — Jetzt ausprobieren
 
