@@ -15,6 +15,15 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
   - Spracherkennung: `?lang=`-URL-Parameter > Browser-Sprache > Default (de)
 - **i18n-Guardian-Tests**: Automatische Pruefung dass keine hardcoded Strings in HTML, JS oder Backend stehen (Frontend + Backend)
 
+### Barrierefreiheit
+
+- `aria-live="polite"` auf Status, Scan-Animation und Ergebnis-Bereich — Screenreader lesen Aenderungen vor
+
+### Sicherheit
+
+- **Dependabot**: Monatliche automatische Pruefung auf unsichere Dependencies (npm + GitHub Actions)
+- **npm audit in CI**: Backend-Dependencies werden bei jedem Push auf bekannte Sicherheitsluecken geprueft
+
 ## [1.0.0] — 2026-02-16
 
 Erster oeffentlicher Release.
