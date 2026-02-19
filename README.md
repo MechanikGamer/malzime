@@ -1,6 +1,10 @@
 # malziME — Was KI aus deinem Foto liest
 
 [![CI](https://github.com/malziland/malzime/actions/workflows/ci.yml/badge.svg)](https://github.com/malziland/malzime/actions/workflows/ci.yml)
+![Lighthouse Performance](https://img.shields.io/badge/Performance-100-brightgreen?logo=lighthouse)
+![Lighthouse Accessibility](https://img.shields.io/badge/Accessibility-100-brightgreen?logo=lighthouse)
+![Lighthouse Best Practices](https://img.shields.io/badge/Best_Practices-100-brightgreen?logo=lighthouse)
+![Lighthouse SEO](https://img.shields.io/badge/SEO-100-brightgreen?logo=lighthouse)
 
 > **[malzi.me](https://malzi.me)** — Jetzt ausprobieren
 
