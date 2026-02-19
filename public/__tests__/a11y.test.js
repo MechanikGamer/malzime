@@ -2,8 +2,11 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 /**
  * Accessibility tests — prüft dass alle interaktiven Elemente
- * per Tastatur erreichbar sind (kein display:none, kein visibility:hidden,
- * kein tabindex=-1 auf wichtigen Elementen).
+ * per Tastatur erreichbar sind, auch in Safari.
+ *
+ * Safari tabbt standardmäßig NUR zu Links und Text-Inputs.
+ * Buttons, Checkboxen und File-Inputs brauchen ein explizites
+ * tabindex="0" um in Safari per Tab erreichbar zu sein.
  */
 
 function buildPage() {
@@ -12,7 +15,7 @@ function buildPage() {
     <main id="main">
       <section class="upload-section">
         <label class="file-drop" for="fileInput">
-          <input id="fileInput" type="file" accept="image/*" />
+          <input id="fileInput" type="file" accept="image/*" tabindex="0" />
         </label>
         <div class="hp-field" aria-hidden="true">
           <input type="text" id="website" tabindex="-1" />
@@ -26,7 +29,7 @@ function buildPage() {
             </span>
           </span>
           <label class="toggle-switch">
-            <input type="checkbox" id="biasSwitch" aria-label="Beast Mode aktivieren" />
+            <input type="checkbox" id="biasSwitch" aria-label="Beast Mode aktivieren" tabindex="0" />
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
           <span class="bias-opt boost" data-mode="boost">
@@ -38,11 +41,13 @@ function buildPage() {
       </div>
       <section class="demo-section">
         <div class="demo-grid">
-          <button class="demo-thumb" data-demo="selfie" type="button">Selfie</button>
-          <button class="demo-thumb" data-demo="cafe" type="button">Café</button>
-          <button class="demo-thumb" data-demo="hiker" type="button">Hiker</button>
+          <button class="demo-thumb" data-demo="selfie" type="button" tabindex="0">Selfie</button>
+          <button class="demo-thumb" data-demo="cafe" type="button" tabindex="0">Café</button>
+          <button class="demo-thumb" data-demo="hiker" type="button" tabindex="0">Hiker</button>
         </div>
       </section>
+      <button id="exportPdf" class="export-btn" tabindex="0">PDF</button>
+      <button id="disclaimerConfirm" class="modal-btn" tabindex="0">OK</button>
     </main>
     <a href="https://github.com" class="opensource-link">GitHub</a>
     <a href="https://buymeacoffee.com" class="support-btn">Support</a>
@@ -60,28 +65,9 @@ describe("Keyboard accessibility", () => {
     expect(link.getAttribute("href")).toBe("#main");
   });
 
-  it("file input is NOT display:none (must be tabbable)", () => {
-    const input = document.getElementById("fileInput");
-    expect(input).toBeTruthy();
-    /* display:none würde tabIndex auf -1 setzen in echten Browsern —
-       hier prüfen wir dass kein display:none/hidden Attribut gesetzt ist */
-    expect(input.style.display).not.toBe("none");
-    expect(input.hidden).toBe(false);
-    expect(input.tabIndex).not.toBe(-1);
-  });
-
   it("honeypot field has tabindex=-1 (not tabbable)", () => {
     const hp = document.getElementById("website");
     expect(hp.tabIndex).toBe(-1);
-  });
-
-  it("bias toggle checkbox is NOT display:none (must be tabbable)", () => {
-    const toggle = document.getElementById("biasSwitch");
-    expect(toggle).toBeTruthy();
-    expect(toggle.type).toBe("checkbox");
-    expect(toggle.style.display).not.toBe("none");
-    expect(toggle.hidden).toBe(false);
-    expect(toggle.tabIndex).not.toBe(-1);
   });
 
   it("bias toggle has aria-label", () => {
@@ -93,28 +79,52 @@ describe("Keyboard accessibility", () => {
     const icons = document.querySelectorAll(".info-icon");
     expect(icons.length).toBe(2);
     icons.forEach((icon) => {
-      expect(icon.tabIndex).toBe(0);
+      expect(icon.getAttribute("tabindex")).toBe("0");
       expect(icon.getAttribute("role")).toBe("button");
       expect(icon.getAttribute("aria-label")).toBeTruthy();
     });
   });
 
-  it("demo buttons are native <button> elements (inherently tabbable)", () => {
+  /*
+   * Safari-Kompatibilität: Safari tabbt ohne macOS-Systemeinstellung
+   * NUR zu Links und Text-Inputs. Buttons, Checkboxen und File-Inputs
+   * brauchen ein explizites tabindex="0" im HTML-Attribut.
+   */
+  it("file input has explicit tabindex=0 (Safari)", () => {
+    const input = document.getElementById("fileInput");
+    expect(input).toBeTruthy();
+    expect(input.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("bias toggle checkbox has explicit tabindex=0 (Safari)", () => {
+    const toggle = document.getElementById("biasSwitch");
+    expect(toggle).toBeTruthy();
+    expect(toggle.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("demo buttons have explicit tabindex=0 (Safari)", () => {
     const buttons = document.querySelectorAll(".demo-thumb");
     expect(buttons.length).toBe(3);
     buttons.forEach((btn) => {
       expect(btn.tagName).toBe("BUTTON");
-      expect(btn.type).toBe("button");
-      expect(btn.tabIndex).not.toBe(-1);
-      expect(btn.hidden).toBe(false);
+      expect(btn.getAttribute("tabindex")).toBe("0");
     });
   });
 
+  it("export button has explicit tabindex=0 (Safari)", () => {
+    const btn = document.getElementById("exportPdf");
+    expect(btn.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("disclaimer confirm button has explicit tabindex=0 (Safari)", () => {
+    const btn = document.getElementById("disclaimerConfirm");
+    expect(btn.getAttribute("tabindex")).toBe("0");
+  });
+
   it("expected tab order: skip → file → info1 → toggle → info2 → demos → links", () => {
-    /* Sammle alle tabbable Elemente in DOM-Reihenfolge */
-    const tabbable = Array.from(
-      document.querySelectorAll('a[href], button:not([disabled]), input:not([tabindex="-1"]), [tabindex="0"]')
-    ).filter((el) => !el.hidden && el.style.display !== "none" && el.tabIndex !== -1);
+    const tabbable = Array.from(document.querySelectorAll('a[href], [tabindex="0"]')).filter(
+      (el) => !el.hidden && el.style.display !== "none"
+    );
 
     const ids = tabbable.map((el) => el.id || el.className.split(" ")[0] || el.tagName.toLowerCase());
 
@@ -135,18 +145,8 @@ describe("Keyboard accessibility", () => {
     expect(toggleIdx).toBeLessThan(infoIndices[1]);
   });
 
-  it("demo section has no hidden elements that should be tabbable", () => {
-    const demoButtons = document.querySelectorAll(".demo-thumb");
-    demoButtons.forEach((btn) => {
-      expect(btn.hidden).toBe(false);
-      expect(btn.style.display).not.toBe("none");
-    });
-  });
-
   it("modal is not visible by default (no focus trap active)", () => {
-    /* Modal sollte standardmäßig nicht im DOM-Flow sein */
     const modal = document.querySelector(".modal-overlay");
-    /* Wenn kein Modal im Test-DOM → OK, kein Focus-Trap-Risiko */
     if (modal) {
       expect(modal.classList.contains("active")).toBe(false);
     }
