@@ -16,6 +16,7 @@ initializeApp();
 exports.analyze = onRequest(
   {
     region: "europe-west1",
+    memory: "512MiB",
     cors: ["https://malzi.me", "https://www.malzi.me", "https://malzime.web.app", "https://malzime.firebaseapp.com"],
     invoker: "public",
     maxInstances: 10,
