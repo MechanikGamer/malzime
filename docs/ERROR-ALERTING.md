@@ -11,7 +11,7 @@ Wenn die Cloud Function abstuerzt (z.B. Speicherfehler, API-Timeout), wirst du p
 1. Oeffne: https://console.cloud.google.com/monitoring/alerting/notifications?project=malzime
 2. Scroll runter zum Bereich **Email** (steht unter Webhooks, SMS usw.)
 3. Klick rechts daneben auf **"Add New"**
-4. **Email Address:** deine E-Mail-Adresse (z.B. malziland@gmail.com)
+4. **Email Address:** deine E-Mail-Adresse
 5. **Display Name:** `malziME Alerts` (frei waehlbar, nur ein Label fuer dich)
 6. Klick **"Save"**
 
