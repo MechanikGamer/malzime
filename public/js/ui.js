@@ -43,31 +43,61 @@ export function stopScanAnim() {
 /* ── Disclaimer-Modal ── */
 
 let currentDisclaimerHandler = null;
+let previouslyFocused = null;
+let currentKeyHandler = null;
 
 export function showDisclaimerModal(onConfirm) {
   /* Alten Handler entfernen falls Modal bereits offen (BUG-002: Listener-Leak) */
   if (currentDisclaimerHandler) {
     elements.disclaimerConfirm.removeEventListener("click", currentDisclaimerHandler);
   }
+  if (currentKeyHandler) {
+    document.removeEventListener("keydown", currentKeyHandler);
+  }
 
+  previouslyFocused = document.activeElement;
   elements.disclaimerModal.classList.add("active");
+  elements.disclaimerConfirm.focus();
 
   currentDisclaimerHandler = function handleConfirm() {
-    elements.disclaimerModal.classList.remove("active");
-    elements.disclaimerConfirm.removeEventListener("click", currentDisclaimerHandler);
-    currentDisclaimerHandler = null;
+    closeModal();
     onConfirm();
   };
 
+  currentKeyHandler = function handleKey(e) {
+    if (e.key === "Escape") {
+      closeModal();
+      return;
+    }
+    /* Focus-Trap: Tab bleibt im Modal */
+    if (e.key === "Tab") {
+      e.preventDefault();
+      elements.disclaimerConfirm.focus();
+    }
+  };
+
   elements.disclaimerConfirm.addEventListener("click", currentDisclaimerHandler);
+  document.addEventListener("keydown", currentKeyHandler);
 }
 
-export function dismissDisclaimerModal() {
+function closeModal() {
+  elements.disclaimerModal.classList.remove("active");
   if (currentDisclaimerHandler) {
     elements.disclaimerConfirm.removeEventListener("click", currentDisclaimerHandler);
     currentDisclaimerHandler = null;
   }
-  elements.disclaimerModal.classList.remove("active");
+  if (currentKeyHandler) {
+    document.removeEventListener("keydown", currentKeyHandler);
+    currentKeyHandler = null;
+  }
+  if (previouslyFocused) {
+    previouslyFocused.focus();
+    previouslyFocused = null;
+  }
+}
+
+export function dismissDisclaimerModal() {
+  closeModal();
 }
 
 /* ── PDF-Export Hilfsfunktionen ── */

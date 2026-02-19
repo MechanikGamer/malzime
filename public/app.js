@@ -114,33 +114,40 @@ document.querySelectorAll(".bias-opt").forEach((opt) => {
 });
 
 /* Info-Icon Tooltip: Nur einer gleichzeitig, Position am Viewport ausrichten */
-document.querySelectorAll(".info-icon").forEach((icon) => {
-  icon.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const wasOpen = icon.classList.contains("tooltip-open");
-    /* Alle schließen */
-    document.querySelectorAll(".info-icon.tooltip-open").forEach((el) => el.classList.remove("tooltip-open"));
-    if (!wasOpen) {
-      icon.classList.add("tooltip-open");
-      /* Tooltip vertikal positionieren */
-      const tip = icon.querySelector(".tooltip");
-      if (tip) {
-        tip.style.top = "0px";
-        void tip.offsetHeight; /* Reflow erzwingen damit offsetHeight stimmt */
-        const rect = icon.getBoundingClientRect();
-        const tipH = tip.offsetHeight;
-        let top = rect.top - tipH - 12;
-        const below = top < 8;
-        /* Falls Tooltip oben rausfällt → unter dem Icon anzeigen */
-        if (below) top = rect.bottom + 12;
-        tip.style.top = top + "px";
-        tip.classList.toggle("below", below);
-      }
+function toggleTooltip(icon, e) {
+  e.stopPropagation();
+  const wasOpen = icon.classList.contains("tooltip-open");
+  /* Alle schließen */
+  document.querySelectorAll(".info-icon.tooltip-open").forEach((el) => el.classList.remove("tooltip-open"));
+  if (!wasOpen) {
+    icon.classList.add("tooltip-open");
+    /* Tooltip vertikal positionieren */
+    const tip = icon.querySelector(".tooltip");
+    if (tip) {
+      tip.style.top = "0px";
+      void tip.offsetHeight; /* Reflow erzwingen damit offsetHeight stimmt */
+      const rect = icon.getBoundingClientRect();
+      const tipH = tip.offsetHeight;
+      let top = rect.top - tipH - 12;
+      const below = top < 8;
+      /* Falls Tooltip oben rausfällt → unter dem Icon anzeigen */
+      if (below) top = rect.bottom + 12;
+      tip.style.top = top + "px";
+      tip.classList.toggle("below", below);
     }
-    /* Desktop: Hover auf dem anderen Icon unterdrücken solange einer offen ist */
-    document.querySelectorAll(".info-icon").forEach((el) => {
-      el.classList.toggle("tooltip-suppress", el !== icon && !wasOpen);
-    });
+  }
+  /* Desktop: Hover auf dem anderen Icon unterdrücken solange einer offen ist */
+  document.querySelectorAll(".info-icon").forEach((el) => {
+    el.classList.toggle("tooltip-suppress", el !== icon && !wasOpen);
+  });
+}
+document.querySelectorAll(".info-icon").forEach((icon) => {
+  icon.addEventListener("click", (e) => toggleTooltip(icon, e));
+  icon.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggleTooltip(icon, e);
+    }
   });
 });
 document.addEventListener("click", () => {
