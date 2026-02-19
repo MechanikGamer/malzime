@@ -53,12 +53,42 @@ Diese Regeln sind nicht verhandelbar:
 - **Kein Firebase SDK im Frontend.**
 - **dateTimeOriginal wird nicht an Gemini gesendet.** (Verleitet zu falschen Altersschaetzungen.)
 
+## Uebersetzungen
+
+malziME hat ein vollstaendiges i18n-System — aktuell ist nur Deutsch verfuegbar. So fuegst du eine neue Sprache hinzu:
+
+### Frontend (UI-Strings)
+
+1. Kopiere `public/locales/de.json` nach `public/locales/XX.json` (z.B. `en.json`)
+2. Uebersetze alle Werte (Keys nicht aendern!)
+3. Fuege den Sprachcode in `public/locales/manifest.json` hinzu: `"languages": ["de", "XX"]`
+
+### Backend (Prompts + Tierprofile)
+
+1. Erstelle `functions/src/locales/XX/prompts.js` — kopiere `de/prompts.js` als Vorlage
+2. Erstelle `functions/src/locales/XX/animals.js` — kopiere `de/animals.js` als Vorlage
+3. Fuege den Sprachcode in `functions/src/locales/manifest.json` hinzu
+
+### Testen
+
+- `?lang=XX` an die URL anhaengen um die Sprache zu testen
+- Frontend-Tests: `npm run test:frontend`
+- Backend-Tests: `cd functions && npm test`
+- Die i18n-Guardian-Tests pruefen automatisch, dass keine Strings fehlen
+
+### Wichtig bei Uebersetzungen
+
+- Alle `{{placeholder}}`-Variablen muessen erhalten bleiben
+- Profil-Sprache: Du-Form, kein Passiv (auch in anderen Sprachen eine persoenliche Anrede waehlen)
+- Nie "kaukasisch" verwenden — "europaeisch" oder "mitteleuropaeisch"
+- Bei neuen Sprachen: HTML-Attribut `data-i18n` verwendet die gleichen Keys wie in `de.json`
+
 ## Was wir suchen
 
 - Bessere Prompt-Qualitaet (realistischere/lehrreichere Profile)
 - Neue Demo-Datensaetze fuer Workshops
 - Barrierefreiheit (a11y) Verbesserungen
-- Uebersetzungen (aktuell nur Deutsch)
+- Uebersetzungen in weitere Sprachen (siehe oben)
 - Bug-Reports und Edge-Cases
 - Performance-Optimierungen
 

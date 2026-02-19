@@ -14,6 +14,10 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
     render.js        Ergebnis-Rendering (Profile, EXIF, Karte, Datenwert)
     state.js         Globaler State (requestId, isAnalyzing)
     ui.js            UI-Komponenten (Disclaimer-Modal, Scan-Animation, Bias-Toggle)
+    i18n.js          i18n Micro-Modul (initI18n, t, getLanguage, applyTranslations)
+  locales/           Frontend-Locale-Dateien
+    manifest.json    Verfuegbare Sprachen + Default
+    de.json          Deutsche UI-Strings (Keys fuer alle data-i18n-Elemente)
   __tests__/         Vitest Frontend-Tests
   styles.css         Dark-Theme CSS + Print Styles + Self-hosted @font-face
   impressum.html     Impressum
@@ -32,6 +36,11 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   vision.js          Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
   privacy.js         Privacy-Risiko-Erkennung aus OCR/Labels
   gemini.js          Vertex AI Gemini: Bildbeschreibung (multimodal) + Profilgenerierung (text)
+  i18n.js            Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
+  locales/           Backend-Locale-Dateien
+    manifest.json    Verfuegbare Sprachen + Default
+    de/prompts.js    Deutsche Gemini-Prompts (System-Prompts, Labels, JSON-Schema)
+    de/animals.js    Deutsche Tier-Easter-Egg-Profile
   __tests__/         Jest Unit-Tests
 
 docs/                Setup-Dokumentation
@@ -42,8 +51,8 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (113 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (48 tests)
+- `cd functions && npm test` — run Jest backend unit tests (124 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (69 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend
@@ -61,6 +70,10 @@ docs/                Setup-Dokumentation
 - Frontend: vanilla JS ES modules, no build step, no framework
 - Sprache in Profilen und UI: Deutsch (du-Form, kein Passiv)
 - Nie "kaukasisch" verwenden — stattdessen "europaeisch" oder "mitteleuropaeisch"
+- Neue UI-Strings gehoeren in `public/locales/de.json` (nicht hardcoded in HTML/JS)
+- Neue Prompt-Texte gehoeren in `functions/src/locales/de/prompts.js`
+- Neue Tier-Profile gehoeren in `functions/src/locales/de/animals.js`
+- i18n-Guardian-Tests pruefen dass keine hardcoded Strings in HTML/JS/Backend stehen
 
 ## Testing Guidelines
 
@@ -104,6 +117,7 @@ docs/                Setup-Dokumentation
 - Run `npm run lint:frontend && npm run format:frontend:check` before committing frontend changes
 - Update cache-buster `?v=YYYYMMDDNN` on CSS/JS when editing frontend files
 - Both profiles (normal + boost) are generated in parallel — changes to prompts affect `gemini.js`
-- Bei Aenderungen an der Architektur oder neuen Features: README.md und docs/SETUP.md aktualisieren
+- Bei Aenderungen an der Architektur oder neuen Features: README.md, AGENTS.md, CHANGELOG.md, docs/SETUP.md und docs/SELF-HOSTING.md aktualisieren
+- Bei neuen Features: Dokumentation und Anleitungen mitliefern
 - dateTimeOriginal wird NICHT an Gemini gesendet (verleitet zu falschen Altersschaetzungen)
 - Describe-Prompt: kein konkretes Alter nennen, nur physische Merkmale beschreiben

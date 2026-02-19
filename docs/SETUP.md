@@ -70,8 +70,8 @@ cd functions && npm test
 npm run test:frontend
 ```
 
-**Backend (113 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung.
-**Frontend (48 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration.
+**Backend (124 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian.
+**Frontend (69 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
 
 ## 7. Linting + Formatting
 
@@ -172,6 +172,40 @@ Benoetigtes GitHub Secret:
 ## Eigene Instanz aufsetzen (Fork)
 
 Falls du malziME auf deinem eigenen Firebase-Projekt betreiben willst: [`docs/SELF-HOSTING.md`](SELF-HOSTING.md) enthaelt eine vollstaendige Schritt-fuer-Schritt-Anleitung mit allen Stellen die angepasst werden muessen (CORS, Domains, Impressum, CI/CD, etc.).
+
+## Mehrsprachigkeit (i18n)
+
+malziME hat ein vollstaendiges i18n-System. Alle UI-Texte, Gemini-Prompts und Tier-Profile sind in Locale-Dateien ausgelagert.
+
+### Aufbau
+
+```
+public/locales/                Frontend-Locales
+  manifest.json                Verfuegbare Sprachen + Default-Sprache
+  de.json                      Deutsche UI-Strings
+
+functions/src/locales/         Backend-Locales
+  manifest.json                Verfuegbare Sprachen + Default-Sprache
+  de/prompts.js                Deutsche Gemini-Prompts
+  de/animals.js                Deutsche Tier-Easter-Egg-Profile
+```
+
+### Wie es funktioniert
+
+1. **Frontend**: `public/js/i18n.js` laedt beim Start `manifest.json` und die passende Locale-Datei. HTML-Elemente mit `data-i18n`-Attributen werden automatisch uebersetzt. Die `t()`-Funktion liefert Strings per Key.
+2. **Backend**: `functions/src/i18n.js` stellt `loadPrompts(lang)` und `loadAnimals(lang)` bereit. Der `lang`-Parameter kommt vom Client im Request-Body.
+3. **Spracherkennung**: `?lang=XX` URL-Parameter > Browser-Sprache > Default (`de`)
+
+### Neue Sprache hinzufuegen
+
+1. Frontend: `public/locales/XX.json` erstellen (Kopie von `de.json`, Werte uebersetzen)
+2. Backend: `functions/src/locales/XX/prompts.js` + `XX/animals.js` erstellen
+3. Sprachcode in beide `manifest.json` eintragen
+4. Tests ausfuehren — die i18n-Guardian-Tests pruefen automatisch auf fehlende Strings
+
+### Testen
+
+Sprache per URL-Parameter testen: `https://malzi.me/?lang=XX`
 
 ## Hinweise
 

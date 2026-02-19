@@ -21,6 +21,7 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 - **Easter Egg**: Tierfotos bekommen ein lustiges Spass-Profil
 - **PDF-Export**: Ergebnisse als PDF speichern (fuer Workshop-Diskussionen)
 - **Demo-Modus**: Vorbereitete Profile fuer Workshops ohne echte Fotos
+- **Mehrsprachig vorbereitet**: i18n-System fuer UI, Prompts und Tierprofile (aktuell Deutsch)
 - **Kein Tracking**: Keine Cookies, keine Analytics, keine Werbung, keine Speicherung
 
 ## Architektur
@@ -29,7 +30,8 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 public/                     Firebase Hosting (SPA, kein Build-Schritt)
   index.html                Hauptseite
   app.js                    Entry Point (ES Module)
-  js/                       Frontend-Module (api, dom, exif, geocoding, render, state, ui)
+  js/                       Frontend-Module (api, dom, exif, geocoding, i18n, render, state, ui)
+  locales/                  Frontend-Locale-Dateien (de.json, manifest.json)
   styles.css                Dark-Theme CSS + Print Styles
   __tests__/                Vitest Frontend-Tests
   impressum.html            Impressum
@@ -48,6 +50,8 @@ functions/src/              Firebase Cloud Functions (2nd Gen, Node 24, europe-w
   vision.js                 Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
   privacy.js                Datenschutz-Risiko-Erkennung aus OCR/Labels
   gemini.js                 Vertex AI Gemini (Bildbeschreibung + Profilgenerierung)
+  i18n.js                   Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
+  locales/                  Backend-Locale-Dateien (de/prompts.js, de/animals.js, manifest.json)
   __tests__/                Jest Unit-Tests
 ```
 
@@ -99,6 +103,7 @@ Detaillierte Anleitung: [`docs/SETUP.md`](docs/SETUP.md) | Eigene Instanz aufset
   "mimeType": "image/jpeg",
   "filename": "upload.jpg",
   "exif": { "make": "Apple", "model": "iPhone 15 Pro" },
+  "lang": "de",
   "demoImageId": "demo-1"
 }
 ```
@@ -108,6 +113,7 @@ Detaillierte Anleitung: [`docs/SETUP.md`](docs/SETUP.md) | Eigene Instanz aufset
 | `imageBase64` | string | Base64-kodiertes Bild (client-seitig komprimiert) |
 | `mimeType` | string | `image/jpeg`, `image/png`, `image/webp`, `image/gif` |
 | `exif` | object | Kamera-Metadaten vom Client (ohne GPS!) |
+| `lang` | string | Sprachcode (`de`, `en`, ...). Default: `de` |
 | `demoImageId` | string | `demo-1` oder `demo-2` fuer vorgeschriebene Profile |
 
 ### Response
@@ -153,10 +159,10 @@ Bei blockierten Bildern ist `profiles: null` und `blockedReason` enthaelt den Gr
 ## Tests
 
 ```bash
-# Backend (Jest, 113 Tests)
+# Backend (Jest, 124 Tests)
 cd functions && npm test
 
-# Frontend (Vitest + jsdom, 48 Tests)
+# Frontend (Vitest + jsdom, 69 Tests)
 npm run test:frontend
 
 # Linting
@@ -166,9 +172,9 @@ cd functions && npm run format:check   # Backend Prettier
 npm run format:frontend:check          # Frontend Prettier
 ```
 
-**Backend (113 Tests):** HTTP-Handler, Tier-Erkennung (Word-Boundary-Matching), Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, EXIF-Sanitization.
+**Backend (124 Tests):** HTTP-Handler, Tier-Erkennung (Word-Boundary-Matching), Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, EXIF-Sanitization, i18n-Guardian.
 
-**Frontend (48 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration (mit fetch-Mock).
+**Frontend (69 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration (mit fetch-Mock), i18n-Modul, i18n-Guardian.
 
 ## CI/CD
 
@@ -192,6 +198,7 @@ Benoetigtes Secret: `FIREBASE_SERVICE_ACCOUNT` (Service Account JSON)
 | Geocoding | Nominatim (client-seitig) |
 | EXIF-Parsing | exifr (client-seitig im Browser) |
 | Fonts | Inter + JetBrains Mono (self-hosted, woff2) |
+| i18n | Eigenes Micro-Modul (Frontend JSON + Backend CommonJS Locales) |
 | Frontend | Vanilla JS, kein Framework, kein Build-Schritt |
 
 ## Einschraenkungen

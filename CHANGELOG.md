@@ -4,6 +4,17 @@ Alle relevanten Aenderungen an malziME werden hier dokumentiert.
 
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.1.0] — 2026-02-19
+
+### Features
+
+- **i18n-System**: Alle UI-Texte, Gemini-Prompts und Tier-Profile in Locale-Dateien ausgelagert
+  - Frontend: `public/locales/de.json` (alle UI-Strings via `data-i18n`-Attribute)
+  - Backend: `functions/src/locales/de/prompts.js` (Gemini-Prompts) + `de/animals.js` (Tierprofile)
+  - Sprachcode wird vom Client an den Server gesendet (`lang`-Parameter)
+  - Spracherkennung: `?lang=`-URL-Parameter > Browser-Sprache > Default (de)
+- **i18n-Guardian-Tests**: Automatische Pruefung dass keine hardcoded Strings in HTML, JS oder Backend stehen (Frontend + Backend)
+
 ## [1.0.0] — 2026-02-16
 
 Erster oeffentlicher Release.

@@ -148,7 +148,22 @@ run: npx firebase-tools deploy --only functions --project DEIN-PROJEKT --force
 Benoetigtes GitHub Secret:
 - `FIREBASE_SERVICE_ACCOUNT` — Service Account JSON deines Projekts
 
-### 5f. Spenden-Button (optional)
+### 5f. Locale-Dateien (optional)
+
+Die UI-Texte, Gemini-Prompts und Tier-Profile liegen in Locale-Dateien:
+
+| Dateien | Inhalt |
+|---------|--------|
+| `public/locales/de.json` | Alle Frontend-UI-Strings |
+| `functions/src/locales/de/prompts.js` | Gemini-Prompts (System-Prompts, Labels, Schema) |
+| `functions/src/locales/de/animals.js` | Tier-Easter-Egg-Profile |
+
+Wenn du die Texte anpassen oder eine neue Sprache hinzufuegen willst:
+- Frontend: Kopiere `de.json` nach `XX.json`, uebersetze die Werte, trage den Code in `manifest.json` ein
+- Backend: Erstelle `functions/src/locales/XX/prompts.js` + `XX/animals.js`, trage den Code in `manifest.json` ein
+- Testen mit `?lang=XX` in der URL
+
+### 5g. Spenden-Button (optional)
 
 **Datei:** `.github/FUNDING.yml`
 
@@ -201,6 +216,7 @@ Bevor du live gehst:
 - [ ] Meta-Tags (OG, Twitter, canonical) zeigen auf deine Domain
 - [ ] User-Agent in geocoding.js enthaelt deinen Projektnamen
 - [ ] Eigenes OG-Image erstellt
+- [ ] Locale-Dateien angepasst (falls gewuenscht)
 - [ ] Tests laufen: `cd functions && npm test` und `npm run test:frontend`
 - [ ] Lokal getestet: Bild hochladen funktioniert
 
