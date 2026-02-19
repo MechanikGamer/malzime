@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { getLanguage } from "./i18n.js";
 
 /* Geocoding vorausladen — wird gestartet sobald GPS gefunden wird,
    läuft parallel zur Analyse. Retry bei TLS 425 "Too Early". */
@@ -11,7 +12,7 @@ export function startGeocoding(lat, lng) {
     if (!signal.aborted) state.geocodeAbortController.abort();
   }, 15000);
 
-  const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=de`;
+  const geoUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=${getLanguage()}`;
   const doFetch = () =>
     fetch(geoUrl, {
       headers: { "User-Agent": "malzime-workshop-demo/1.0" },

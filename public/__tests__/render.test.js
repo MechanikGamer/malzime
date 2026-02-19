@@ -1,5 +1,12 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setupDOM } from "./setup.js";
+
+vi.mock("../js/i18n.js", () => ({
+  t: (key) => key,
+  getLanguage: () => "de",
+  initI18n: () => Promise.resolve(),
+  applyTranslations: () => {},
+}));
 
 describe("Render helpers", () => {
   let elements, _escapeHtml;
@@ -36,7 +43,7 @@ describe("Render helpers", () => {
       /* EXIF-Karte sollte gerendert sein */
       expect(elements.privacy.innerHTML).toContain("Apple");
       expect(elements.privacy.innerHTML).toContain("iPhone 15 Pro");
-      expect(elements.privacy.innerHTML).toContain("Kamera-Hersteller");
+      expect(elements.privacy.innerHTML).toContain("exif.make");
     });
   });
 

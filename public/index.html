@@ -66,24 +66,24 @@
     <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
     <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
     <link rel="stylesheet" href="./lib/leaflet/leaflet.css" />
-    <link rel="stylesheet" href="./styles.css?v=2026021609" />
+    <link rel="stylesheet" href="./styles.css?v=2026021901" />
   </head>
   <body>
     <div class="scan-lines"></div>
 
     <main class="container">
       <!-- Print-Disclaimer (nur im Druck, nur Seite 1) -->
-      <div class="print-disclaimer">
+      <div class="print-disclaimer" data-i18n-html="disclaimer.main">
         <strong>malziME</strong> ist ein Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung. Die KI-Profile sind erfunden und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; nichts davon ist wahr oder bewiesen.
       </div>
 
       <header class="hero">
         <div class="hero-badge">
           <span class="pulse"></span>
-          <span class="badge-text">SYSTEM AKTIV</span>
+          <span class="badge-text" data-i18n="hero.badge">SYSTEM AKTIV</span>
         </div>
-        <h1>Wir sehen mehr als dein Foto.</h1>
-        <p class="lead">Lade ein Bild hoch. Die KI erstellt in Sekunden ein komplettes Profil &uuml;ber dich &mdash; aus einem einzigen Foto.</p>
+        <h1 data-i18n="hero.title">Wir sehen mehr als dein Foto.</h1>
+        <p class="lead" data-i18n="hero.lead">Lade ein Bild hoch. Die KI erstellt in Sekunden ein komplettes Profil &uuml;ber dich &mdash; aus einem einzigen Foto.</p>
       </header>
 
       <section class="upload-section">
@@ -91,8 +91,8 @@
           <input id="fileInput" type="file" accept="image/*" />
           <div class="drop-content">
             <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
-            <span class="drop-label">Foto ausw&auml;hlen oder hierhin ziehen</span>
-            <span class="drop-hint">JPEG, PNG, WEBP &middot; max 20 MB</span>
+            <span class="drop-label" data-i18n="upload.label">Foto ausw&auml;hlen oder hierhin ziehen</span>
+            <span class="drop-hint" data-i18n="upload.hint">JPEG, PNG, WEBP &middot; max 20 MB</span>
           </div>
         </label>
         <div id="imagePreview" class="image-preview"></div>
@@ -108,9 +108,9 @@
           <span class="bias-opt" data-mode="normal">
             <span class="info-icon">
               <span class="info-i">i</span>
-              <span class="tooltip">Sachliche Einsch&auml;tzung &mdash; so wie echte Algorithmen dich im Hintergrund kategorisieren. Direkt, konkret, ohne &Uuml;bertreibung.</span>
+              <span class="tooltip" data-i18n="bias.normalTooltip">Sachliche Einsch&auml;tzung &mdash; so wie echte Algorithmen dich im Hintergrund kategorisieren. Direkt, konkret, ohne &Uuml;bertreibung.</span>
             </span>
-            Seri&ouml;se Analyse
+            <span data-i18n="bias.normalLabel">Seri&ouml;se Analyse</span>
           </span>
           <label class="toggle-switch">
             <input type="checkbox" id="biasSwitch" />
@@ -119,10 +119,10 @@
             </span>
           </label>
           <span class="bias-opt boost" data-mode="boost">
-            Beast Mode
+            <span data-i18n="bias.boostLabel">Beast Mode</span>
             <span class="info-icon">
               <span class="info-i">i</span>
-              <span class="tooltip">Maximale &Uuml;bertreibung &mdash; zeigt wie ein skrupelloser Algorithmus dich ausnutzen w&uuml;rde. Provokant, pers&ouml;nlich, schonungslos. Nichts davon ist wahr &mdash; aber so denken Werbemaschinen.</span>
+              <span class="tooltip" data-i18n="bias.boostTooltip">Maximale &Uuml;bertreibung &mdash; zeigt wie ein skrupelloser Algorithmus dich ausnutzen w&uuml;rde. Provokant, pers&ouml;nlich, schonungslos. Nichts davon ist wahr &mdash; aber so denken Werbemaschinen.</span>
             </span>
           </span>
         </div>
@@ -137,7 +137,7 @@
             <circle cx="32" cy="32" r="4" fill="currentColor"/>
           </svg>
         </div>
-        <div class="scan-text" id="scanText">Scanning&hellip;</div>
+        <div class="scan-text" id="scanText" data-i18n="scan.text">Scanning&hellip;</div>
         <div class="scan-bar"><div class="scan-fill"></div></div>
       </div>
 
@@ -152,14 +152,14 @@
         <div class="export-wrap">
           <button id="exportPdf" class="export-btn" style="display:none">
             <svg class="export-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 16V4m0 12l-4-4m4 4l4-4"/><path d="M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
-            Ergebnis als PDF speichern
+            <span data-i18n="export.button">Ergebnis als PDF speichern</span>
           </button>
         </div>
       </section>
 
       <div class="disclaimer" style="margin-top:0; margin-bottom:28px">
-        <p><strong>malziME</strong> ist ein Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung. Die KI-Profile sind erfunden und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; nichts davon ist wahr oder bewiesen.</p>
-        <p style="margin-top:8px">F&uuml;r Workshops k&ouml;nnen auch Stock-Fotos oder &auml;ltere Bilder verwendet werden. Kein hochgeladenes Bild wird gespeichert oder ist nach der Analyse abrufbar.</p>
+        <p data-i18n-html="disclaimer.main"><strong>malziME</strong> ist ein Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung. Die KI-Profile sind erfunden und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; nichts davon ist wahr oder bewiesen.</p>
+        <p style="margin-top:8px" data-i18n="disclaimer.workshop">F&uuml;r Workshops k&ouml;nnen auch Stock-Fotos oder &auml;ltere Bilder verwendet werden. Kein hochgeladenes Bild wird gespeichert oder ist nach der Analyse abrufbar.</p>
       </div>
 
     </main>
@@ -167,23 +167,23 @@
     <div class="opensource-box">
       <a href="https://github.com/malziland/malzime" target="_blank" rel="noopener" class="opensource-link">
         <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        Open Source auf GitHub
+        <span data-i18n="opensource.link">Open Source auf GitHub</span>
       </a>
     </div>
 
     <div class="support-box">
-      <p class="support-headline">Keine Paywall. Kein Bullshit.</p>
-      <p class="support-text">Und du h&auml;ltst es am Laufen.</p>
-      <a href="https://buymeacoffee.com/malzime" target="_blank" rel="noopener" class="support-btn">Jetzt Projekt unterst&uuml;tzen</a>
+      <p class="support-headline" data-i18n="support.headline">Keine Paywall. Kein Bullshit.</p>
+      <p class="support-text" data-i18n="support.text">Und du h&auml;ltst es am Laufen.</p>
+      <a href="https://buymeacoffee.com/malzime" target="_blank" rel="noopener" class="support-btn" data-i18n="support.button">Jetzt Projekt unterst&uuml;tzen</a>
     </div>
 
     <footer class="site-footer">
       <div class="footer-inner">
-        <span class="footer-copy">&copy; 2026 malziME &bull; powered by malziland</span>
+        <span class="footer-copy" data-i18n="footer.copy">&copy; 2026 malziME &bull; powered by malziland</span>
         <span class="footer-sep">&middot;</span>
-        <a href="/impressum">Impressum</a>
+        <a href="/impressum" data-i18n="footer.impressum">Impressum</a>
         <span class="footer-sep">&middot;</span>
-        <a href="/datenschutz">Datenschutz</a>
+        <a href="/datenschutz" data-i18n="footer.datenschutz">Datenschutz</a>
       </div>
     </footer>
 
@@ -193,15 +193,15 @@
         <div class="modal-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M3.6 19.8h16.8a1.2 1.2 0 001.04-1.8L13.04 4.2a1.2 1.2 0 00-2.08 0L2.56 18a1.2 1.2 0 001.04 1.8z"/></svg>
         </div>
-        <h2>Wichtiger Hinweis</h2>
-        <p>malziME ist ein <strong>Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung</strong>.</p>
-        <p>Die KI-Profile sind <strong>erfunden</strong> und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; <strong>nichts davon ist wahr oder bewiesen</strong>.</p>
+        <h2 data-i18n="modal.title">Wichtiger Hinweis</h2>
+        <p data-i18n-html="modal.text1">malziME ist ein <strong>Lern-Tool f&uuml;r Medienkompetenz und Datenschutz-Sensibilisierung</strong>.</p>
+        <p data-i18n-html="modal.text2">Die KI-Profile sind <strong>erfunden</strong> und zeigen nur, was Algorithmen behaupten k&ouml;nnten &ndash; <strong>nichts davon ist wahr oder bewiesen</strong>.</p>
         <div class="modal-divider"></div>
-        <button class="modal-btn" id="disclaimerConfirm">Verstanden &ndash; Ergebnis anzeigen</button>
+        <button class="modal-btn" id="disclaimerConfirm" data-i18n="modal.button">Verstanden &ndash; Ergebnis anzeigen</button>
       </div>
     </div>
 
     <script src="./lib/leaflet/leaflet.js"></script>
-    <script type="module" src="./app.js?v=2026021609"></script>
+    <script type="module" src="./app.js?v=2026021901"></script>
   </body>
 </html>

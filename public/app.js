@@ -1,8 +1,13 @@
+import { initI18n, applyTranslations, t } from "./js/i18n.js";
 import { elements } from "./js/dom.js";
 import { state } from "./js/state.js";
 import { analyzeImage } from "./js/api.js";
 import { renderCurrentMode } from "./js/render.js";
 import { dismissDisclaimerModal, insertPrintNotes, removePrintNotes } from "./js/ui.js";
+
+/* ── i18n initialisieren (vor allem anderen) ── */
+await initI18n();
+applyTranslations();
 
 /* Leaflet Marker-Icons: Auto-Detection deaktivieren und Pfade für self-hosted Build setzen */
 if (typeof L !== "undefined" && L.Icon && L.Icon.Default) {
@@ -40,7 +45,7 @@ function handleNewFile(file) {
   const url = URL.createObjectURL(file);
   const img = document.createElement("img");
   img.src = url;
-  img.alt = "Vorschau";
+  img.alt = t("preview.alt");
   elements.imagePreview.innerHTML = "";
   elements.imagePreview.appendChild(img);
 

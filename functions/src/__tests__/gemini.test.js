@@ -1,4 +1,4 @@
-const { buildDescriptionFromLabels } = require("../gemini");
+const { buildDescriptionFromLabels, buildPrompt } = require("../gemini");
 
 // We only test the pure functions from gemini.js here.
 // describeImage and generateBothProfiles depend on Vertex AI and are integration-tested.
@@ -122,5 +122,40 @@ describe("buildDescriptionFromLabels", () => {
     expect(result).toContain("Person 1");
     expect(result).not.toContain("Emotion");
     expect(result).not.toContain("Kopfbedeckung");
+  });
+});
+
+describe("buildPrompt", () => {
+  const mockPrompts = {
+    injectionWarning: "TEST_INJECTION_WARNING",
+    workshopNote: "TEST_WORKSHOP_NOTE",
+    jsonSchema: "TEST_JSON_SCHEMA",
+  };
+
+  test("uses prompts object passed as parameter (not a global)", () => {
+    const result = buildPrompt(mockPrompts, "SYSTEM_CTX", "IMG_DESC", "", "", "");
+    expect(result).toContain("TEST_INJECTION_WARNING");
+    expect(result).toContain("TEST_WORKSHOP_NOTE");
+    expect(result).toContain("TEST_JSON_SCHEMA");
+  });
+
+  test("includes system context and image description", () => {
+    const result = buildPrompt(mockPrompts, "My system prompt", "A person standing", "", "", "");
+    expect(result).toContain("My system prompt");
+    expect(result).toContain("A person standing");
+  });
+
+  test("includes optional context blocks when provided", () => {
+    const result = buildPrompt(mockPrompts, "SYS", "DESC", "label-data", "exif-data", "privacy-data");
+    expect(result).toContain("<vision_labels>label-data</vision_labels>");
+    expect(result).toContain("<exif_daten>exif-data</exif_daten>");
+    expect(result).toContain("<privacy_risiken>privacy-data</privacy_risiken>");
+  });
+
+  test("omits optional context blocks when empty", () => {
+    const result = buildPrompt(mockPrompts, "SYS", "DESC", "", "", "");
+    expect(result).not.toContain("<vision_labels>");
+    expect(result).not.toContain("<exif_daten>");
+    expect(result).not.toContain("<privacy_risiken>");
   });
 });

@@ -2,6 +2,13 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { setupDOM } from "./setup.js";
 
 /* Mock-Module die api.js importiert */
+vi.mock("../js/i18n.js", () => ({
+  t: (key) => key,
+  getLanguage: () => "de",
+  initI18n: () => Promise.resolve(),
+  applyTranslations: () => {},
+}));
+
 vi.mock("../js/exif.js", () => ({
   prepareImage: vi.fn().mockResolvedValue({
     imageBase64: "QUFB",
@@ -104,13 +111,13 @@ describe("analyzeImage", () => {
     /* fileInput.files muss leer sein */
     Object.defineProperty(elements.fileInput, "files", { value: [], configurable: true });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("Bild auswählen");
+    expect(elements.status.textContent).toBe("error.noFile");
   });
 
   it("shows error for oversized file", async () => {
     state.lastFile = new File([new ArrayBuffer(21 * 1024 * 1024)], "big.jpg", { type: "image/jpeg" });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("groß");
+    expect(elements.status.textContent).toBe("error.fileTooLarge");
   });
 
   it("silently returns on honeypot trigger", async () => {
@@ -131,7 +138,7 @@ describe("analyzeImage", () => {
       text: () => Promise.resolve("{}"),
     });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("Zu viele Anfragen");
+    expect(elements.status.textContent).toBe("error.rateLimit");
   });
 
   it("shows user-friendly message on 413", async () => {
@@ -141,7 +148,7 @@ describe("analyzeImage", () => {
       text: () => Promise.resolve("{}"),
     });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("groß");
+    expect(elements.status.textContent).toBe("error.imageTooLarge");
   });
 
   it("shows user-friendly message on 400", async () => {
@@ -151,7 +158,7 @@ describe("analyzeImage", () => {
       text: () => Promise.resolve("{}"),
     });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("Foto");
+    expect(elements.status.textContent).toBe("error.invalidFormat");
   });
 
   it("shows server error on 500", async () => {
@@ -161,19 +168,19 @@ describe("analyzeImage", () => {
       text: () => Promise.resolve("{}"),
     });
     await analyzeImage();
-    expect(elements.status.textContent).toContain("Server");
+    expect(elements.status.textContent).toBe("error.serverError");
   });
 
   it("handles AbortError (timeout)", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(Object.assign(new Error("aborted"), { name: "AbortError" }));
     await analyzeImage();
-    expect(elements.status.textContent).toContain("zu lange");
+    expect(elements.status.textContent).toBe("error.timeout");
   });
 
   it("handles network error", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
     await analyzeImage();
-    expect(elements.status.textContent).toContain("Verbindung");
+    expect(elements.status.textContent).toBe("error.networkError");
   });
 
   it("injects GPS data client-side", async () => {

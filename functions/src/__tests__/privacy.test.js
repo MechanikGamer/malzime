@@ -8,32 +8,31 @@ describe("buildPrivacyRisks", () => {
 
   test("detects address in OCR text", () => {
     const risks = buildPrivacyRisks({ ocrText: "Musterstraße 12", exif: {}, labels: [] });
-    expect(risks.length).toBeGreaterThan(0);
-    expect(risks[0]).toMatch(/Adresse|schulbezogen/);
+    expect(risks).toContain("privacy.address");
   });
 
   test("detects school reference", () => {
     const risks = buildPrivacyRisks({ ocrText: "Grundschule Nord", exif: {}, labels: [] });
-    expect(risks.some((r) => r.includes("schulbezogen") || r.includes("Adresse"))).toBe(true);
+    expect(risks).toContain("privacy.address");
   });
 
   test("detects phone number", () => {
     const risks = buildPrivacyRisks({ ocrText: "0732 12345678", exif: {}, labels: [] });
-    expect(risks.some((r) => r.includes("Telefonnummer"))).toBe(true);
+    expect(risks).toContain("privacy.phone");
   });
 
   test("ignores watermark text for phone detection", () => {
     const risks = buildPrivacyRisks({ ocrText: "Shutterstock 123456789", exif: {}, labels: [] });
-    expect(risks.some((r) => r.includes("Telefonnummer"))).toBe(false);
+    expect(risks).not.toContain("privacy.phone");
   });
 
   test("detects license plate from labels", () => {
     const risks = buildPrivacyRisks({ ocrText: "", exif: {}, labels: ["Kennzeichen", "Auto"] });
-    expect(risks.some((r) => r.includes("Kennzeichen"))).toBe(true);
+    expect(risks).toContain("privacy.licensePlate");
   });
 
   test("detects license plate from OCR pattern", () => {
     const risks = buildPrivacyRisks({ ocrText: "LL-AB 1234", exif: {}, labels: [] });
-    expect(risks.some((r) => r.includes("Kennzeichen"))).toBe(true);
+    expect(risks).toContain("privacy.licensePlate");
   });
 });

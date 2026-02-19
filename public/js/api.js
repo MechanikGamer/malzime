@@ -4,6 +4,7 @@ import { prepareImage } from "./exif.js";
 import { startGeocoding } from "./geocoding.js";
 import { setStatus, startScanAnim, stopScanAnim, showDisclaimerModal } from "./ui.js";
 import { renderCurrentMode } from "./render.js";
+import { t, getLanguage } from "./i18n.js";
 
 const PAGE_LOADED_AT = Date.now();
 const MIN_INTERACTION_MS = 2000;
@@ -34,13 +35,13 @@ export async function analyzeImage() {
   const file = state.lastFile || elements.fileInput.files[0];
   if (!file) {
     stopScanAnim();
-    setStatus("Bitte zuerst ein Bild ausw\u00e4hlen.");
+    setStatus(t("error.noFile"));
     state.isAnalyzing = false;
     return;
   }
   if (file.size > 20 * 1024 * 1024) {
     stopScanAnim();
-    setStatus("Datei zu gro\u00df. Max 20 MB.");
+    setStatus(t("error.fileTooLarge"));
     state.isAnalyzing = false;
     return;
   }
@@ -89,6 +90,7 @@ export async function analyzeImage() {
         exif: state.lastPrepared.exif,
         mimeType: "image/jpeg",
         filename: "upload.jpg",
+        lang: getLanguage(),
       }),
       signal: controller.signal,
     });
@@ -101,21 +103,21 @@ export async function analyzeImage() {
     if (state.requestId !== myId) return;
 
     if (!response.ok) {
-      let msg = "Da ist etwas schiefgelaufen. Versuch es nochmal.";
+      let msg = t("error.generic");
       if (response.status === 429) {
-        msg = "Zu viele Anfragen aus eurem Netzwerk. Wartet kurz und versucht es gleich nochmal.";
+        msg = t("error.rateLimit");
       } else if (response.status === 413) {
-        msg = "Das Bild ist zu gro\u00df. Bitte ein kleineres Foto verwenden.";
+        msg = t("error.imageTooLarge");
       } else if (response.status === 400) {
-        msg = "Das hat nicht geklappt. Ist das wirklich ein Foto? Versuche JPEG oder PNG.";
+        msg = t("error.invalidFormat");
       } else if (response.status >= 500) {
-        msg = "Der Server hat gerade ein Problem. Wartet einen Moment und versucht es nochmal.";
+        msg = t("error.serverError");
       }
       try {
-        const t = await response.text();
-        const p = JSON.parse(t);
-        if (p.code === "file_too_large") msg = "Das Bild ist zu gro\u00df. Bitte ein kleineres Foto verwenden.";
-        if (p.code === "missing_image") msg = "Kein Bild erkannt. Bitte ein Foto ausw\u00e4hlen.";
+        const body = await response.text();
+        const p = JSON.parse(body);
+        if (p.code === "file_too_large") msg = t("error.imageTooLarge");
+        if (p.code === "missing_image") msg = t("error.missingImage");
       } catch (_) {
         /* response parse failed — use default msg */
       }
@@ -147,15 +149,15 @@ export async function analyzeImage() {
     if (state.requestId !== myId) return;
     stopScanAnim();
     if (err.name === "AbortError") {
-      setStatus("Die Analyse dauert zu lange. Versuch es nochmal oder nimm ein anderes Foto.");
+      setStatus(t("error.timeout"));
     } else if (err.message === "read_failed") {
-      setStatus("Das Bild konnte nicht gelesen werden. Versuch ein anderes Foto.");
+      setStatus(t("error.readFailed"));
     } else if (err.message === "image_decode_failed") {
-      setStatus("Das Bildformat wird nicht unterst\u00fctzt. Versuch JPEG oder PNG.");
+      setStatus(t("error.decodeFailed"));
     } else if (!navigator.onLine) {
-      setStatus("Keine Internetverbindung. Bitte pr\u00fcfe dein WLAN.");
+      setStatus(t("error.offline"));
     } else {
-      setStatus("Verbindung zum Server fehlgeschlagen. Pr\u00fcfe dein Internet und versuch es nochmal.");
+      setStatus(t("error.networkError"));
     }
   } finally {
     /* BUG-001: Timeout immer aufräumen */

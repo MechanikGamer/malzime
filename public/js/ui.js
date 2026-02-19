@@ -1,23 +1,7 @@
 import { elements } from "./dom.js";
+import { t } from "./i18n.js";
 
 /* ── Scan-Animation ── */
-
-const scanMessages = [
-  "Gesicht erkannt\u2026",
-  "Kleidung wird analysiert\u2026",
-  "Umgebung wird gescannt\u2026",
-  "Marken werden identifiziert\u2026",
-  "Emotionen werden gelesen\u2026",
-  "Social-Media-Profil wird rekonstruiert\u2026",
-  "Kaufverhalten wird berechnet\u2026",
-  "Pers\u00f6nlichkeitstyp wird bestimmt\u2026",
-  "Werbeprofil wird erstellt\u2026",
-  "Manipulations-Vektoren werden berechnet\u2026",
-  "Politische Einstellung wird gesch\u00e4tzt\u2026",
-  "EXIF-Daten werden extrahiert\u2026",
-  "Standort wird trianguliert\u2026",
-  "Einkommensstufe wird klassifiziert\u2026",
-];
 
 let scanInterval = null;
 
@@ -39,7 +23,8 @@ export function startScanAnim() {
   stopScanAnim(); /* BUG-009: alten Intervall aufräumen bevor neuer startet */
   elements.scanAnim.classList.add("active");
   let idx = 0;
-  const shuffled = [...scanMessages].sort(() => Math.random() - 0.5);
+  const messages = t("scan.messages");
+  const shuffled = [...(Array.isArray(messages) ? messages : [])].sort(() => Math.random() - 0.5);
   elements.scanText.textContent = shuffled[0];
   scanInterval = setInterval(() => {
     idx = (idx + 1) % shuffled.length;
@@ -87,8 +72,6 @@ export function dismissDisclaimerModal() {
 
 /* ── PDF-Export Hilfsfunktionen ── */
 
-const PRINT_NOTE = "Diese Informationen sind von der KI erfunden \u2013 Nichts davon ist wahr!";
-
 export function insertPrintNotes() {
   removePrintNotes();
 
@@ -111,7 +94,7 @@ export function insertPrintNotes() {
     if (accumulated > PAGE_HEIGHT) {
       const note = document.createElement("div");
       note.className = "print-note";
-      note.textContent = PRINT_NOTE;
+      note.textContent = t("print.note");
       block.parentNode.insertBefore(note, block);
       accumulated = NOTE_HEIGHT + h;
     }

@@ -442,7 +442,8 @@ describe("analyze handler", () => {
       expect.not.arrayContaining(["Toddler", "Baby"]),
       expect.any(Object),
       expect.any(Array),
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(String)
     );
     // But "Person", "Child", "Smile" should remain
     expect(mockGenerateBothProfiles).toHaveBeenCalledWith(
@@ -450,7 +451,8 @@ describe("analyze handler", () => {
       expect.arrayContaining(["Person", "Child", "Smile"]),
       expect.any(Object),
       expect.any(Array),
-      expect.any(Function)
+      expect.any(Function),
+      expect.any(String)
     );
   });
 

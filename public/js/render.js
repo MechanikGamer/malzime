@@ -1,6 +1,16 @@
 import { elements, escapeHtml } from "./dom.js";
 import { state } from "./state.js";
 import { getBiasMode } from "./ui.js";
+import { t, getLanguage } from "./i18n.js";
+
+/* ── Locale-aware Zahlenformatierung ── */
+
+function fmtNum(val, decimals = 2) {
+  return new Intl.NumberFormat(getLanguage(), {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(val);
+}
 
 /* ── Aktuellen Modus rendern (aus gecachten Daten) ── */
 
@@ -10,9 +20,7 @@ export function renderCurrentMode(data) {
 
   if (!profiles) {
     /* Blockiert — Fehlermeldung anzeigen */
-    renderSimulation(
-      data.blockedReason || "Die Analyse konnte nicht abgeschlossen werden. Versuch es mit einem anderen Foto."
-    );
+    renderSimulation(t(data.blockedReason || "render.blockedFallback"));
     elements.facts.innerHTML = "";
     elements.targeting.innerHTML = "";
     elements.dataValue.innerHTML = "";
@@ -31,9 +39,7 @@ export function renderCurrentMode(data) {
     (profile.categories && Object.keys(profile.categories).length > 0);
 
   if (!hasContent) {
-    renderSimulation(
-      "Die KI hat ein leeres Profil zurückgeliefert. Versuch es mit einem anderen Foto oder wechsle den Modus."
-    );
+    renderSimulation(t("render.emptyProfile"));
     elements.facts.innerHTML = "";
     elements.targeting.innerHTML = "";
     elements.dataValue.innerHTML = "";
@@ -103,7 +109,7 @@ function renderAdTargeting(profile) {
   if (ads.length > 0) {
     html += `
       <div class="target-card">
-        <h3>Diese Werbung w\u00fcrdest du sehen</h3>
+        <h3>${t("targeting.adsTitle")}</h3>
         <div class="tag-cloud">
           ${ads.map((ad) => `<span class="tag">${escapeHtml(ad)}</span>`).join("")}
         </div>
@@ -114,9 +120,9 @@ function renderAdTargeting(profile) {
   if (triggers.length > 0) {
     html += `
       <div class="target-card warn">
-        <h3>So w\u00fcrde man dich manipulieren</h3>
+        <h3>${t("targeting.manipTitle")}</h3>
         <ul class="trigger-list">
-          ${triggers.map((t) => `<li>${escapeHtml(t)}</li>`).join("")}
+          ${triggers.map((trigger) => `<li>${escapeHtml(trigger)}</li>`).join("")}
         </ul>
       </div>
     `;
@@ -128,17 +134,19 @@ function renderAdTargeting(profile) {
 
 /* ── Rendering: Privacy-Risiken + EXIF ── */
 
-const EXIF_LABELS = {
-  make: "Kamera-Hersteller",
-  model: "Kamera-Modell",
-  dateTimeOriginal: "Aufnahmedatum",
-};
+function getExifLabels() {
+  return {
+    make: t("exif.make"),
+    model: t("exif.model"),
+    dateTimeOriginal: t("exif.dateTimeOriginal"),
+  };
+}
 
 function formatExifValue(key, value) {
   if (key === "dateTimeOriginal" && value) {
     try {
       const d = new Date(value);
-      return d.toLocaleString("de-AT", {
+      return d.toLocaleString(getLanguage(), {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -166,11 +174,12 @@ function renderPrivacyRisks(data) {
   let html = '<div class="privacy-stack">';
 
   if (hasCamera && exifEntries.length > 0) {
+    const labels = getExifLabels();
     html += `
       <div class="meta-card">
-        <h3>Versteckte Daten in deinem Foto</h3>
+        <h3>${t("exif.sectionTitle")}</h3>
         <table class="meta-table">
-          ${exifEntries.map(([k, v]) => `<tr><td>${escapeHtml(EXIF_LABELS[k] || k)}</td><td>${escapeHtml(formatExifValue(k, v))}</td></tr>`).join("")}
+          ${exifEntries.map(([k, v]) => `<tr><td>${escapeHtml(labels[k] || k)}</td><td>${escapeHtml(formatExifValue(k, v))}</td></tr>`).join("")}
         </table>
       </div>
     `;
@@ -179,8 +188,8 @@ function renderPrivacyRisks(data) {
   if (risks.length > 0) {
     html += `
       <div class="meta-card warn">
-        <h3>Das hast du ungewollt verraten</h3>
-        <ul>${risks.map((r) => `<li>${escapeHtml(r)}</li>`).join("")}</ul>
+        <h3>${t("privacy.sectionTitle")}</h3>
+        <ul>${risks.map((r) => `<li>${escapeHtml(t(r))}</li>`).join("")}</ul>
       </div>
     `;
   }
@@ -214,7 +223,7 @@ async function renderGpsMap(data) {
 
     elements.gpsMap.innerHTML = `
       <div class="map-wrapper">
-        <h3>Hier wurdest du geortet</h3>
+        <h3>${t("gps.sectionTitle")}</h3>
         <div id="gpsMapLeaflet"></div>
       </div>
     `;
@@ -226,8 +235,8 @@ async function renderGpsMap(data) {
     }).addTo(state.gpsMapInstance);
 
     const popupText = address
-      ? `<strong>Dein Standort</strong><br>${escapeHtml(address)}`
-      : `<strong>Dein Standort</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      ? `<strong>${t("gps.popup")}</strong><br>${escapeHtml(address)}`
+      : `<strong>${t("gps.popup")}</strong><br>${lat.toFixed(5)}, ${lng.toFixed(5)}`;
     L.marker([lat, lng]).addTo(state.gpsMapInstance).bindPopup(popupText).openPopup();
   } catch (_err) {
     /* BUG-015: Leaflet-Fehler abfangen statt Unhandled Promise Rejection */
@@ -247,7 +256,7 @@ function renderSimulation(text) {
     <div class="verdict">
       <div class="verdict-head">
         <svg class="verdict-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M3.6 19.8h16.8a1.2 1.2 0 001.04-1.8L13.04 4.2a1.2 1.2 0 00-2.08 0L2.56 18a1.2 1.2 0 001.04 1.8z"/></svg>
-        <h3>So denkt die KI \u00fcber dich</h3>
+        <h3>${t("verdict.title")}</h3>
       </div>
       <p class="verdict-text">${escapeHtml(text)}</p>
     </div>
@@ -309,10 +318,10 @@ function computeDataValue(profile) {
 }
 
 function formatEuro(val) {
-  if (val >= 1_000_000_000_000) return (val / 1_000_000_000_000).toFixed(1).replace(".", ",") + " Billionen \u20ac";
-  if (val >= 1_000_000_000) return (val / 1_000_000_000).toFixed(1).replace(".", ",") + " Milliarden \u20ac";
-  if (val >= 1_000_000) return (val / 1_000_000).toFixed(1).replace(".", ",") + " Millionen \u20ac";
-  return val.toFixed(2).replace(".", ",") + " \u20ac";
+  if (val >= 1_000_000_000_000) return t("dv.trillions", { value: fmtNum(val / 1_000_000_000_000, 1) });
+  if (val >= 1_000_000_000) return t("dv.billions", { value: fmtNum(val / 1_000_000_000, 1) });
+  if (val >= 1_000_000) return t("dv.millions", { value: fmtNum(val / 1_000_000, 1) });
+  return t("dv.euro", { value: fmtNum(val) });
 }
 
 function renderDataValue(profile) {
@@ -335,82 +344,82 @@ function renderDataValue(profile) {
         <svg class="dv-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
         </svg>
-        <h3>Dein Datenwert</h3>
+        <h3>${t("dv.title")}</h3>
       </div>
-      <div class="dv-hero-value">${result.perUser.toFixed(2).replace(".", ",")} \u20ac</div>
-      <p class="dv-subtitle">So viel ist dein Profil f\u00fcr Datenbroker wert \u2014 bei einem einzelnen Verkauf.</p>
+      <div class="dv-hero-value">${t("dv.heroValue", { value: fmtNum(result.perUser) })}</div>
+      <p class="dv-subtitle">${t("dv.subtitle")}</p>
 
       <div class="dv-explain">
-        <h4>Was bedeutet das?</h4>
-        <p>Datenbroker sind Firmen, die Informationen \u00fcber dich sammeln und an andere Unternehmen weiterverkaufen. Die ${result.perUser.toFixed(2).replace(".", ",")} \u20ac sind der Preis, den ein einzelner Datensatz \u00fcber dich auf diesem Markt kostet \u2014 also das, was aus <strong>einem einzigen Foto</strong> \u00fcber dich herausgelesen werden kann.</p>
-        <p>Klingt wenig? Das Problem: Dein Profil wird nicht einmal verkauft, sondern <strong>immer wieder</strong>. Datenbroker verkaufen die gleichen Daten an dutzende verschiedene K\u00e4ufer \u2014 Versicherungen, Werbefirmen, Arbeitgeber, politische Kampagnen. Im Schnitt wird dein Profil rund <strong>${RESALES_PER_YEAR} Mal pro Jahr</strong> weiterverkauft.</p>
+        <h4>${t("dv.explainTitle")}</h4>
+        <p>${t("dv.explain1", { amount: fmtNum(result.perUser) })}</p>
+        <p>${t("dv.explain2", { resales: RESALES_PER_YEAR })}</p>
       </div>
 
       <div class="dv-scale">
         <div class="dv-scale-row">
-          <span class="dv-scale-label">\u00d7 ${RESALES_PER_YEAR} Weiterverk\u00e4ufe pro Jahr</span>
-          <span class="dv-scale-value">${new Intl.NumberFormat("de-DE").format(Math.round(personalYearly))} \u20ac pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.resalesLabel", { resales: RESALES_PER_YEAR })}</span>
+          <span class="dv-scale-value">${t("dv.resalesValue", { amount: new Intl.NumberFormat(getLanguage()).format(Math.round(personalYearly)) })}</span>
         </div>
       </div>
 
       <div class="dv-explain dv-explain-highlight">
-        <h4>Zwei M\u00e4rkte verdienen an deinen Daten</h4>
-        <p>Es gibt nicht nur einen Weg, mit deinen Daten Geld zu verdienen \u2014 es gibt zwei komplett getrennte M\u00e4rkte:</p>
-        <p><strong>1. Datenbroker</strong> \u2014 Firmen wie Acxiom, Oracle oder Datalogix kaufen und verkaufen Datens\u00e4tze \u00fcber dich. Dein Profil wird im Schnitt ${RESALES_PER_YEAR} \u00d7 pro Jahr weiterverkauft. Das ergibt ca. <strong>${personalYearly.toFixed(0)} \u20ac pro Jahr</strong> allein durch den Handel mit deinen Daten.</p>
-        <p><strong>2. Werbeplattformen</strong> \u2014 Meta, Google und TikTok verkaufen deine Daten nicht direkt, sondern nutzen sie intern, um dir personalisierte Werbung zu zeigen. Damit verdienen sie zusammen ca. <strong>${AD_PLATFORMS_YEARLY} \u20ac pro Jahr</strong> an dir.</p>
-        <p>Zusammen ergibt das \u00fcber <strong>${Math.round(totalYearly)} \u20ac pro Jahr</strong>, die mit deinen Daten verdient werden.</p>
+        <h4>${t("dv.marketsTitle")}</h4>
+        <p>${t("dv.marketsIntro")}</p>
+        <p>${t("dv.brokerExplain", { resales: RESALES_PER_YEAR, brokerYearly: personalYearly.toFixed(0) })}</p>
+        <p>${t("dv.platformExplain", { adYearly: AD_PLATFORMS_YEARLY })}</p>
+        <p>${t("dv.totalExplain", { totalYearly: Math.round(totalYearly) })}</p>
       </div>
 
       <div class="dv-scale">
         <div class="dv-scale-row">
-          <span class="dv-scale-label">Datenbroker (Weiterverkauf)</span>
-          <span class="dv-scale-value">ca. ${personalYearly.toFixed(0)} \u20ac pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.labelBroker")}</span>
+          <span class="dv-scale-value">${t("dv.labelBrokerValue", { amount: personalYearly.toFixed(0) })}</span>
         </div>
         <div class="dv-divider"></div>
         <div class="dv-scale-row">
-          <span class="dv-scale-label">Meta (Werbung)</span>
-          <span class="dv-scale-value">ca. 23 \u20ac pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.labelMeta")}</span>
+          <span class="dv-scale-value">${t("dv.labelMetaValue")}</span>
         </div>
         <div class="dv-scale-row">
-          <span class="dv-scale-label">Google (Werbung)</span>
-          <span class="dv-scale-value">ca. 15 \u20ac pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.labelGoogle")}</span>
+          <span class="dv-scale-value">${t("dv.labelGoogleValue")}</span>
         </div>
         <div class="dv-scale-row">
-          <span class="dv-scale-label">TikTok (Werbung)</span>
-          <span class="dv-scale-value">ca. 12 \u20ac pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.labelTiktok")}</span>
+          <span class="dv-scale-value">${t("dv.labelTiktokValue")}</span>
         </div>
         <div class="dv-divider"></div>
         <div class="dv-scale-row">
-          <span class="dv-scale-label"><strong>Gesamt pro Jahr</strong></span>
-          <span class="dv-scale-value"><strong>\u00fcber ${Math.round(totalYearly)} \u20ac</strong></span>
+          <span class="dv-scale-label">${t("dv.labelTotal")}</span>
+          <span class="dv-scale-value">${t("dv.labelTotalValue", { total: Math.round(totalYearly) })}</span>
         </div>
       </div>
 
       <div class="dv-scale">
         <div class="dv-scale-row">
-          <span class="dv-scale-label">\u00d7 2 Milliarden Nutzer weltweit</span>
+          <span class="dv-scale-label">${t("dv.globalUsersLabel")}</span>
           <span class="dv-scale-value">${formatEuro(result.global)}</span>
         </div>
         <div class="dv-scale-row">
-          <span class="dv-scale-label">Globaler Datenbroker-Markt</span>
-          <span class="dv-scale-value">278 Milliarden Dollar pro Jahr</span>
+          <span class="dv-scale-label">${t("dv.globalMarketLabel")}</span>
+          <span class="dv-scale-value">${t("dv.globalMarketValue")}</span>
         </div>
       </div>
 
       <div class="dv-explain">
-        <h4>Was hei\u00dft \u201e376 \u00d7 pro Tag\u201c?</h4>
-        <p>Der Werbemarkt funktioniert anders als der Datenbroker-Markt. Jedes Mal, wenn dir auf Instagram, TikTok oder Snapchat eine Werbung angezeigt wird, findet im Hintergrund eine <strong>Echtzeit-Auktion</strong> statt. Firmen bieten um das Recht, dir genau diese Werbung zu zeigen. Daf\u00fcr wird dein Profil \u00fcbermittelt \u2014 Alter, Interessen, Standort, Verhalten \u2014 alles in Millisekunden.</p>
-        <p>Das passiert bei europ\u00e4ischen Nutzer:innen durchschnittlich <strong>376 Mal am Tag</strong>. Jede einzelne Auktion ist nur <strong>Bruchteile eines Cents</strong> wert \u2014 aber \u00fcber das ganze Jahr summiert sich das auf die ca. 50 \u20ac, die Plattformen an dir verdienen.</p>
+        <h4>${t("dv.auctionTitle")}</h4>
+        <p>${t("dv.auction1")}</p>
+        <p>${t("dv.auction2")}</p>
       </div>
 
       <div class="dv-explain">
-        <h4>Und was ist mit meinen Fotos auf Snapchat oder Instagram?</h4>
-        <p>Dieses Tool analysiert <strong>ein einzelnes Foto</strong>. Aber auf deinem Snapchat oder Instagram liegen vielleicht hunderte oder tausende Bilder. Jedes einzelne enth\u00e4lt Informationen: Wo du warst, mit wem, was du getragen hast, wie du dich gef\u00fchlt hast. Zusammen ergibt das ein extrem detailliertes Profil \u00fcber dein ganzes Leben.</p>
-        <p>Plattformen wie Meta werten nicht nur deine Fotos aus, sondern <strong>alles</strong>: Wie lange du ein Bild anschaust, was du likest, wem du folgst, wann du online bist, wo du dich befindest. Daraus entsteht ein Profil mit <strong>tausenden Datenpunkten</strong> \u2014 viel mehr als dieses Tool aus einem Foto zeigen kann.</p>
+        <h4>${t("dv.photosTitle")}</h4>
+        <p>${t("dv.photos1")}</p>
+        <p>${t("dv.photos2")}</p>
       </div>
 
       <div class="dv-breakdown">
-        <h4>Wertvollste Datenpunkte aus deinem Foto</h4>
+        <h4>${t("dv.breakdownTitle")}</h4>
         ${top5
           .map(
             (item) => `
@@ -419,14 +428,14 @@ function renderDataValue(profile) {
             <div class="dv-bar-track">
               <div class="dv-bar-fill" style="width:${Math.round((item.value / maxVal) * 100)}%"></div>
             </div>
-            <span class="dv-bar-val">${item.value.toFixed(2).replace(".", ",")} \u20ac</span>
+            <span class="dv-bar-val">${fmtNum(item.value)} \u20ac</span>
           </div>
         `
           )
           .join("")}
       </div>
 
-      <p class="dv-footnote">Profilwert basiert auf Datenbroker-Preisen (Duke University 2023, netzpolitik.org Databroker Files 2024). Weiterverkaufsh\u00e4ufigkeit: abgeleitet aus Marktvolumen (Grand View Research 2024: 278 Mrd. $) und Einzelverkaufswert. Umsatz pro Nutzer: Meta Jahresbericht 2024 (ARPU Europa: 23,14 \u20ac), Alphabet Jahresbericht 2024, ByteDance Sch\u00e4tzung 2024. Echtzeit-Daten-Broadcasts: ICCL Reports 2022/2023.</p>
+      <p class="dv-footnote">${t("dv.footnote")}</p>
     </div>
   `;
 }

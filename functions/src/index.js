@@ -9,6 +9,7 @@ const { analyzeWithVision } = require("./vision");
 const { buildPrivacyRisks } = require("./privacy");
 const { describeImage, buildDescriptionFromLabels, generateBothProfiles } = require("./gemini");
 const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
+const { resolveLanguage, loadPrompts } = require("./i18n");
 
 initializeApp();
 
@@ -98,6 +99,10 @@ exports.analyze = onRequest(
         demoImageId = multipartFields.demoImageId || "";
       }
 
+      /* i18n: Sprache aus Request auflösen */
+      const requestedLang = (jsonBody && jsonBody.lang) || (multipartFields && multipartFields.lang) || "";
+      const lang = resolveLanguage(requestedLang);
+
       /* BUG-004: Honeypot-Check für JSON und Multipart */
       const hpValue = (jsonBody && jsonBody.website) || (multipartFields && multipartFields.website) || "";
       if (hpValue) {
@@ -186,7 +191,7 @@ exports.analyze = onRequest(
 
       /* Tier-Check: Wenn NUR Tier-Labels und keine Personen-Labels → Easter-Egg-Profil */
       if (!hasPerson && hasAnimal) {
-        const { normalProfile, boostProfile } = buildAnimalProfiles(rawLabelsLower);
+        const { normalProfile, boostProfile } = buildAnimalProfiles(rawLabelsLower, lang);
 
         /* BUG-007: Privacy-Risks und EXIF auch bei Tier-Fotos durchreichen —
            ein sichtbares Nummernschild im Hintergrund soll trotzdem gemeldet werden */
@@ -205,7 +210,7 @@ exports.analyze = onRequest(
       let describeBlocked = false;
       let describeError = false;
       try {
-        imageDescription = await describeImage(imageBuffer, file.mimeType, remainingBudget);
+        imageDescription = await describeImage(imageBuffer, file.mimeType, remainingBudget, lang);
         if (!imageDescription) describeBlocked = true;
         console.log(
           JSON.stringify({
@@ -223,13 +228,12 @@ exports.analyze = onRequest(
       /* ── Fallback: Vision-API-Labels ── */
       let usedFallback = false;
       if (!imageDescription) {
-        imageDescription = buildDescriptionFromLabels(visionResult, exif);
+        imageDescription = buildDescriptionFromLabels(visionResult, exif, lang);
         /* Wenn der Safety-Filter die Bildbeschreibung geblockt hat, ist fast immer
          ein Kind oder Jugendlicher im Bild. Dieses Signal an die Profilgenerierung
          weitergeben, damit sie nicht blind "Erwachsener" annimmt. */
         if (describeBlocked && imageDescription) {
-          imageDescription +=
-            " WICHTIG: Die detaillierte Bildbeschreibung wurde von Googles Sicherheitsfiltern blockiert. Das passiert typischerweise bei Fotos von Kindern oder Jugendlichen. Schätze das Alter vorsichtig — gehe eher von einem Kind oder Jugendlichen aus, NICHT von einem Erwachsenen.";
+          imageDescription += loadPrompts(lang).blockedImageHint;
         }
         if (imageDescription) {
           usedFallback = true;
@@ -254,7 +258,8 @@ exports.analyze = onRequest(
             visionResult.labels,
             exif,
             privacyRisks,
-            remainingBudget
+            remainingBudget,
+            lang
           );
           profileBlocked = !profiles.normal && !profiles.boost;
           console.log(
@@ -295,22 +300,17 @@ exports.analyze = onRequest(
       } else {
         let blockedReason;
         if (describeBlocked && !usedFallback) {
-          blockedReason =
-            "Die KI hat das Bild nicht analysiert, weil der Inhalt als sensibel eingestuft wurde \u2014 z.\u00a0B. weil Kinder oder Jugendliche erkannt wurden, oder weil das Bild als gesch\u00fctzt gilt. Googles Sicherheitsfilter blockieren die Auswertung in solchen F\u00e4llen automatisch.";
+          blockedReason = "blocked.safetyFilter";
         } else if (describeBlocked && usedFallback && profileBlocked) {
-          blockedReason =
-            "Die KI durfte das Bild nicht direkt ansehen (Sicherheitsfilter von Google). Die Analyse \u00fcber erkannte Bildelemente wurde ebenfalls blockiert \u2014 der Bildinhalt wurde als zu sensibel eingestuft.";
+          blockedReason = "blocked.safetyFilterFallback";
         } else if (describeError) {
-          blockedReason =
-            "Bei der Bildanalyse ist ein technischer Fehler aufgetreten. Das kann an einer vor\u00fcbergehenden Serverst\u00f6rung liegen. Versuch es in ein paar Sekunden nochmal.";
+          blockedReason = "blocked.apiError";
         } else if (profileBlocked) {
-          blockedReason =
-            "Das Bild wurde erkannt, aber die KI hat die Profilerstellung verweigert. Das passiert, wenn der Bildinhalt als zu sensibel f\u00fcr eine Auswertung eingestuft wird.";
+          blockedReason = "blocked.profileBlocked";
         } else if (!imageDescription) {
-          blockedReason =
-            "Im Bild wurde nichts Auswertbares erkannt \u2014 kein Gesicht, keine Objekte, kein Text. Versuch es mit einem anderen Foto.";
+          blockedReason = "blocked.noContent";
         } else {
-          blockedReason = "Die Analyse konnte nicht abgeschlossen werden. Versuch es mit einem anderen Foto.";
+          blockedReason = "blocked.generic";
         }
 
         res.json({

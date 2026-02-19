@@ -1,0 +1,101 @@
+/* ── i18n Micro-Modul ── */
+
+let strings = {};
+let lang = "de";
+
+/**
+ * Initialisiert das i18n-System.
+ * Lädt manifest.json, erkennt die Browser-Sprache, lädt die passende Locale-Datei.
+ * Muss als erstes in app.js aufgerufen werden (await initI18n()).
+ */
+export async function initI18n() {
+  try {
+    const manifestRes = await fetch("/locales/manifest.json");
+    const manifest = await manifestRes.json();
+
+    const urlLang = new URLSearchParams(window.location.search).get("lang");
+    const browserLang = (navigator.language || "de").split("-")[0].toLowerCase();
+    const requested = urlLang || browserLang;
+    lang = manifest.languages.includes(requested) ? requested : manifest.default;
+
+    const stringsRes = await fetch(`/locales/${lang}.json`);
+    strings = await stringsRes.json();
+  } catch (_err) {
+    /* Manifest oder Locale nicht ladbar — App läuft mit HTML-Fallback-Texten weiter */
+    console.warn("[i18n] Failed to load locale, using HTML fallback");
+    lang = "de";
+    strings = {};
+  }
+
+  document.documentElement.lang = lang;
+}
+
+/**
+ * Übersetzt einen Key.
+ *
+ * t("hero.badge")                    → "SYSTEM AKTIV"
+ * t("footer.copy", { year: 2026 })   → "© 2026 malziME • powered by malziland"
+ * t("scan.messages")                 → ["Gesicht erkannt…", ...]
+ * t("nicht.vorhanden")               → "nicht.vorhanden" (Key als Fallback)
+ */
+export function t(key, params) {
+  const value = strings[key];
+  if (value === undefined) return key;
+  if (Array.isArray(value)) return value;
+
+  let result = value;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      result = result.replaceAll(`{{${k}}}`, v);
+    }
+  }
+  return result;
+}
+
+/** Gibt den aktuellen Sprachcode zurück ("de", "en", ...). */
+export function getLanguage() {
+  return lang;
+}
+
+/**
+ * Befüllt alle HTML-Elemente die data-i18n-Attribute haben.
+ *
+ * data-i18n="hero.title"       → element.textContent = t("hero.title")
+ * data-i18n-alt="preview.alt"  → element.alt = t("preview.alt")
+ *
+ * Nur wenn t() einen Wert liefert der nicht dem Key entspricht (= Key existiert in JSON).
+ * Bei fehlenden Keys bleibt der HTML-Fallback-Text stehen.
+ */
+export function applyTranslations() {
+  document.querySelectorAll("[data-i18n]").forEach((el) => {
+    const key = el.getAttribute("data-i18n");
+    const text = t(key);
+    if (text !== key) el.textContent = text;
+  });
+
+  document.querySelectorAll("[data-i18n-alt]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-alt");
+    const text = t(key);
+    if (text !== key) el.alt = text;
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-title");
+    const text = t(key);
+    if (text !== key) el.title = text;
+  });
+
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-placeholder");
+    const text = t(key);
+    if (text !== key) el.placeholder = text;
+  });
+
+  /* innerHTML for elements with embedded HTML (e.g. <strong> tags).
+     Safe because strings come from our own locale files, not user input. */
+  document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+    const key = el.getAttribute("data-i18n-html");
+    const text = t(key);
+    if (text !== key) el.innerHTML = text;
+  });
+}

@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { setupDOM } from "./setup.js";
 
+vi.mock("../js/i18n.js", () => ({
+  t: (key) => {
+    if (key === "scan.messages") return ["Msg 1", "Msg 2", "Msg 3"];
+    return key;
+  },
+  getLanguage: () => "de",
+  initI18n: () => Promise.resolve(),
+  applyTranslations: () => {},
+}));
+
 describe("Scan Animation", () => {
   let startScanAnim, stopScanAnim;
   let elements;
