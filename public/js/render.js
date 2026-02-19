@@ -24,7 +24,7 @@ export function renderCurrentMode(data) {
     elements.facts.innerHTML = "";
     elements.targeting.innerHTML = "";
     elements.dataValue.innerHTML = "";
-    elements.exportPdf.style.display = "none";
+    elements.exportPdf.classList.add("export-btn--hidden");
 
     renderPrivacyRisks(data);
     renderGpsMap(data);
@@ -43,7 +43,7 @@ export function renderCurrentMode(data) {
     elements.facts.innerHTML = "";
     elements.targeting.innerHTML = "";
     elements.dataValue.innerHTML = "";
-    elements.exportPdf.style.display = "none";
+    elements.exportPdf.classList.add("export-btn--hidden");
 
     renderPrivacyRisks(data);
     renderGpsMap(data);
@@ -61,7 +61,7 @@ export function renderCurrentMode(data) {
   } else {
     renderDataValue(profile);
   }
-  elements.exportPdf.style.display = "inline-flex";
+  elements.exportPdf.classList.remove("export-btn--hidden");
 }
 
 /* ── Rendering: Kategorie-Karten ── */

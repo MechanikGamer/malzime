@@ -28,7 +28,7 @@ export async function analyzeImage() {
   elements.targeting.innerHTML = "";
   elements.dataValue.innerHTML = "";
   elements.simulation.innerHTML = "";
-  elements.exportPdf.style.display = "none";
+  elements.exportPdf.classList.add("export-btn--hidden");
 
   startScanAnim();
 

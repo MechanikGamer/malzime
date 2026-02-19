@@ -1,7 +1,6 @@
 # malziME — Was KI aus deinem Foto liest
 
 [![CI](https://github.com/malziland/malzime/actions/workflows/ci.yml/badge.svg)](https://github.com/malziland/malzime/actions/workflows/ci.yml)
-[![Deploy](https://github.com/malziland/malzime/actions/workflows/deploy.yml/badge.svg)](https://github.com/malziland/malzime/actions/workflows/deploy.yml)
 
 > **[malzi.me](https://malzi.me)** — Jetzt ausprobieren
 
@@ -9,7 +8,12 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 
 **Alles erfunden. Nichts davon ist wahr oder bewiesen.**
 
-![malziME Screenshot](public/og-image.png)
+<p align="center">
+  <img src="docs/screenshots/01-startseite.png" alt="malziME Startseite" width="720" />
+</p>
+<p align="center">
+  <img src="docs/screenshots/02-mobile.png" alt="malziME Mobile" width="280" />
+</p>
 
 ## Features
 
@@ -178,12 +182,13 @@ npm run format:frontend:check          # Frontend Prettier
 
 ## CI/CD
 
-GitHub Actions Workflows in `.github/workflows/`:
+GitHub Actions Workflow `.github/workflows/ci.yml`:
 
-- **`ci.yml`** — Tests bei jedem Push und Pull Request
-- **`deploy.yml`** — Tests + Deploy auf Firebase bei Push auf `main`
-
-Benoetigtes Secret: `FIREBASE_SERVICE_ACCOUNT` (Service Account JSON)
+- **Tests + Lint** bei jedem Push und Pull Request (Backend + Frontend)
+- **Secret-Scan** via gitleaks (prueft auf versehentlich committete API-Keys)
+- **Dependabot** prueft monatlich auf unsichere Dependencies (npm + GitHub Actions)
+- **npm audit** im Backend-Job (blockiert bei kritischen Schwachstellen)
+- Deploy erfolgt manuell per `npx firebase deploy`
 
 ## Tech-Stack
 

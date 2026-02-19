@@ -24,11 +24,22 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 - **Dekorative SVGs**: Mit `aria-hidden="true"` vor Screenreadern versteckt
 - **Reduzierte Bewegung**: `prefers-reduced-motion` deaktiviert alle Animationen fuer bewegungsempfindliche User
 
+### Dokumentation
+
+- **Screenshots**: Desktop- und Mobil-Screenshot in `docs/screenshots/` fuer README
+- **README**: Screenshots eingefuegt, CI/CD-Abschnitt aktualisiert
+- **Error-Alerting-Doku**: Anleitung fuer E-Mail-Benachrichtigungen bei Cloud-Function-Fehlern (`docs/ERROR-ALERTING.md`)
+
 ### Sicherheit
 
+- **CSP gehaertet**: `style-src 'unsafe-inline'` entfernt — alle Inline-Styles durch CSS-Klassen ersetzt
 - **Dependabot**: Monatliche automatische Pruefung auf unsichere Dependencies (npm + GitHub Actions)
 - **npm audit in CI**: Backend-Dependencies werden bei jedem Push auf bekannte Sicherheitsluecken geprueft
 - **gitleaks in CI**: Automatischer Scan nach versehentlich committeten Secrets (API-Keys, Tokens) bei jedem Push
+
+### Tooling
+
+- **Deploy-Script**: `scripts/deploy.sh` — automatisches Cache-Busting (`?v=YYYYMMDDHH`) + Deploy in einem Schritt
 
 ### Bugfixes
 

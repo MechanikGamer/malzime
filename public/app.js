@@ -102,7 +102,7 @@ elements.biasSwitch.addEventListener("change", () => {
 
 /* Text-Labels klickbar — schalten direkt um (aber nicht wenn Info-Icon geklickt) */
 document.querySelectorAll(".bias-opt").forEach((opt) => {
-  opt.style.cursor = "pointer";
+  opt.classList.add("bias-opt--clickable");
   opt.addEventListener("click", (e) => {
     if (e.target.closest(".info-icon")) return;
     const wantBoost = opt.dataset.mode === "boost";

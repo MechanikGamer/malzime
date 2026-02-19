@@ -1443,6 +1443,18 @@ h1 {
   flex-shrink: 0;
 }
 
+/* ── Utility-Klassen (Ersatz fuer Inline-Styles → CSP-konform) ── */
+
+.disclaimer--flush { margin-top: 0; margin-bottom: 28px; }
+.disclaimer__workshop { margin-top: 8px; }
+.export-btn--hidden { display: none; }
+.legal-block--highlight {
+  border-color: rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.04);
+}
+.legal-list--flush { margin-bottom: 0; }
+.bias-opt--clickable { cursor: pointer; }
+
 /* ── Print-Elemente (unsichtbar auf Screen) ── */
 
 .print-disclaimer {
