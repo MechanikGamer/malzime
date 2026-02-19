@@ -4,10 +4,14 @@ import { state } from "./js/state.js";
 import { analyzeImage } from "./js/api.js";
 import { renderCurrentMode } from "./js/render.js";
 import { dismissDisclaimerModal, insertPrintNotes, removePrintNotes } from "./js/ui.js";
+import { initDemo } from "./js/demo.js";
 
 /* ── i18n initialisieren (vor allem anderen) ── */
 await initI18n();
 applyTranslations();
+
+/* ── Demo-Fotos initialisieren ── */
+initDemo();
 
 /* Leaflet Marker-Icons: Auto-Detection deaktivieren und Pfade für self-hosted Build setzen */
 if (typeof L !== "undefined" && L.Icon && L.Icon.Default) {

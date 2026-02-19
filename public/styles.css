@@ -1465,6 +1465,72 @@ h1 {
   flex-shrink: 0;
 }
 
+/* ── Demo-Fotos ── */
+
+.demo-section { margin-bottom: 28px; }
+
+.demo-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.demo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.demo-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  font: inherit;
+  color: inherit;
+}
+
+.demo-thumb:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.demo-thumb:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.demo-thumb img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  display: block;
+}
+
+.demo-caption {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  padding: 6px 8px 10px;
+  text-align: center;
+  transition: color 0.2s;
+}
+
+.demo-thumb:hover .demo-caption { color: var(--accent); }
+
 /* ── Skip-to-Content (Barrierefreiheit) ── */
 
 .skip-link {
@@ -1529,6 +1595,8 @@ h1 {
   .file-drop { padding: 24px 16px; }
   .verdict { padding: 16px; }
   .bias-toggle { padding: 6px 14px; gap: 10px; }
+  .demo-grid { gap: 8px; }
+  .demo-caption { font-size: 0.6rem; padding: 4px 4px 8px; }
 }
 
 /* ═══════════════════════════════════════════════
@@ -1590,6 +1658,7 @@ h1 {
   .scan-lines,
   .hero,
   .upload-section,
+  .demo-section,
   .bias-toggle-wrap,
   .scan-anim,
   .export-btn,

@@ -119,5 +119,9 @@
   "dv.trillions": "{{value}} Billionen €",
   "dv.billions": "{{value}} Milliarden €",
   "dv.millions": "{{value}} Millionen €",
-  "dv.euro": "{{value}} €"
+  "dv.euro": "{{value}} €",
+  "demo.label": "Kein Foto zur Hand? Probier ein Beispielbild:",
+  "demo.selfie": "Selfie am Stephansplatz",
+  "demo.cafe": "Im Café in Salzburg",
+  "demo.hiker": "Wanderung bei Hallstatt"
 }

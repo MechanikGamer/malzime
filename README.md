@@ -31,7 +31,7 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 - **GPS-Karte**: Zeigt den Aufnahmeort auf einer Karte (GPS verlässt nie den Browser)
 - **Easter Egg**: Tierfotos bekommen ein lustiges Spass-Profil
 - **PDF-Export**: Ergebnisse als PDF speichern (fuer Workshop-Diskussionen)
-- **Demo-Modus**: Vorbereitete Profile fuer Workshops ohne echte Fotos
+- **Demo-Fotos**: 3 anklickbare Stock-Fotos mit Fake-EXIF fuer Workshops (echte KI-Analyse, kein vorgefertigtes Ergebnis)
 - **Mehrsprachig vorbereitet**: i18n-System fuer UI, Prompts und Tierprofile (aktuell Deutsch)
 - **Kein Tracking**: Keine Cookies, keine Analytics, keine Werbung, keine Speicherung
 
