@@ -1,73 +1,44 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { resolve, dirname } from "path";
 
 /**
- * Accessibility tests — prüft dass alle interaktiven Elemente
- * per Tastatur erreichbar sind, auch in Safari.
+ * Accessibility tests — prüft die ECHTE index.html auf Safari-Kompatibilität.
  *
- * Safari tabbt standardmäßig NUR zu Links und Text-Inputs.
- * Buttons, Checkboxen und File-Inputs brauchen ein explizites
- * tabindex="0" um in Safari per Tab erreichbar zu sein.
+ * Safari tabbt standardmäßig NUR zu Text-Inputs (nicht zu Links, Buttons,
+ * Checkboxen, File-Inputs). ALLE interaktiven Elemente brauchen ein
+ * explizites tabindex="0" im HTML-Attribut.
+ *
+ * Diese Tests lesen die echte index.html ein, damit keine Diskrepanz
+ * zwischen Test-HTML und Produktions-HTML entstehen kann.
  */
 
-function buildPage() {
-  document.body.innerHTML = `
-    <a href="#main" class="skip-link">Zum Inhalt springen</a>
-    <main id="main">
-      <section class="upload-section">
-        <label class="file-drop" for="fileInput">
-          <input id="fileInput" type="file" accept="image/*" tabindex="0" />
-        </label>
-        <div class="hp-field" aria-hidden="true">
-          <input type="text" id="website" tabindex="-1" />
-        </div>
-      </section>
-      <div class="bias-toggle-wrap">
-        <div class="bias-toggle">
-          <span class="bias-opt" data-mode="normal">
-            <span class="info-icon" tabindex="0" role="button" aria-label="Info">
-              <span class="info-i">i</span>
-            </span>
-          </span>
-          <label class="toggle-switch">
-            <input type="checkbox" id="biasSwitch" aria-label="Beast Mode aktivieren" tabindex="0" />
-            <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          </label>
-          <span class="bias-opt boost" data-mode="boost">
-            <span class="info-icon" tabindex="0" role="button" aria-label="Info">
-              <span class="info-i">i</span>
-            </span>
-          </span>
-        </div>
-      </div>
-      <section class="demo-section">
-        <div class="demo-grid">
-          <button class="demo-thumb" data-demo="selfie" type="button" tabindex="0">Selfie</button>
-          <button class="demo-thumb" data-demo="cafe" type="button" tabindex="0">Café</button>
-          <button class="demo-thumb" data-demo="hiker" type="button" tabindex="0">Hiker</button>
-        </div>
-      </section>
-      <button id="exportPdf" class="export-btn" tabindex="0">PDF</button>
-      <button id="disclaimerConfirm" class="modal-btn" tabindex="0">OK</button>
-    </main>
-    <a href="https://github.com" class="opensource-link">GitHub</a>
-    <a href="https://buymeacoffee.com" class="support-btn">Support</a>
-    <footer><a href="/impressum">Impressum</a><a href="/datenschutz">Datenschutz</a></footer>
-  `;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const html = readFileSync(resolve(__dirname, "../index.html"), "utf-8");
+
+function loadPage() {
+  /* Nur den <body>-Inhalt extrahieren (ohne <script>-Tags) */
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const body = bodyMatch ? bodyMatch[1] : html;
+  const cleaned = body.replace(/<script[\s\S]*?<\/script>/gi, "");
+  document.body.innerHTML = cleaned;
 }
 
-describe("Keyboard accessibility", () => {
-  beforeEach(() => buildPage());
+describe("Safari keyboard accessibility (index.html)", () => {
+  beforeEach(() => loadPage());
 
-  it("skip-link is focusable", () => {
+  it("skip-link exists and points to #main", () => {
     const link = document.querySelector(".skip-link");
     expect(link).toBeTruthy();
-    expect(link.tabIndex).not.toBe(-1);
     expect(link.getAttribute("href")).toBe("#main");
   });
 
-  it("honeypot field has tabindex=-1 (not tabbable)", () => {
+  it("honeypot field has tabindex=-1", () => {
     const hp = document.getElementById("website");
-    expect(hp.tabIndex).toBe(-1);
+    expect(hp).toBeTruthy();
+    expect(hp.getAttribute("tabindex")).toBe("-1");
   });
 
   it("bias toggle has aria-label", () => {
@@ -86,23 +57,21 @@ describe("Keyboard accessibility", () => {
   });
 
   /*
-   * Safari-Kompatibilität: Safari tabbt ohne macOS-Systemeinstellung
-   * NUR zu Links und Text-Inputs. Buttons, Checkboxen und File-Inputs
-   * brauchen ein explizites tabindex="0" im HTML-Attribut.
+   * Safari-Regel: Jedes interaktive Element (Button, Checkbox, File-Input,
+   * Link) muss tabindex="0" haben, sonst überspringt Safari es.
    */
-  it("file input has explicit tabindex=0 (Safari)", () => {
+
+  it("file input has explicit tabindex=0", () => {
     const input = document.getElementById("fileInput");
-    expect(input).toBeTruthy();
     expect(input.getAttribute("tabindex")).toBe("0");
   });
 
-  it("bias toggle checkbox has explicit tabindex=0 (Safari)", () => {
+  it("bias toggle checkbox has explicit tabindex=0", () => {
     const toggle = document.getElementById("biasSwitch");
-    expect(toggle).toBeTruthy();
     expect(toggle.getAttribute("tabindex")).toBe("0");
   });
 
-  it("demo buttons have explicit tabindex=0 (Safari)", () => {
+  it("all demo buttons have explicit tabindex=0", () => {
     const buttons = document.querySelectorAll(".demo-thumb");
     expect(buttons.length).toBe(3);
     buttons.forEach((btn) => {
@@ -111,44 +80,72 @@ describe("Keyboard accessibility", () => {
     });
   });
 
-  it("export button has explicit tabindex=0 (Safari)", () => {
+  it("export button has explicit tabindex=0", () => {
     const btn = document.getElementById("exportPdf");
     expect(btn.getAttribute("tabindex")).toBe("0");
   });
 
-  it("disclaimer confirm button has explicit tabindex=0 (Safari)", () => {
+  it("disclaimer confirm button has explicit tabindex=0", () => {
     const btn = document.getElementById("disclaimerConfirm");
     expect(btn.getAttribute("tabindex")).toBe("0");
   });
 
-  it("expected tab order: skip → file → info1 → toggle → info2 → demos → links", () => {
-    const tabbable = Array.from(document.querySelectorAll('a[href], [tabindex="0"]')).filter(
-      (el) => !el.hidden && el.style.display !== "none"
-    );
+  it("opensource link has explicit tabindex=0", () => {
+    const link = document.querySelector(".opensource-link");
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("tabindex")).toBe("0");
+  });
 
-    const ids = tabbable.map((el) => el.id || el.className.split(" ")[0] || el.tagName.toLowerCase());
+  it("support link has explicit tabindex=0", () => {
+    const link = document.querySelector(".support-btn");
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("tabindex")).toBe("0");
+  });
 
-    /* Skip-link muss vor fileInput kommen */
-    expect(ids.indexOf("skip-link")).toBeLessThan(ids.indexOf("fileInput"));
+  it("footer links have explicit tabindex=0", () => {
+    const links = document.querySelectorAll(".site-footer a");
+    expect(links.length).toBeGreaterThanOrEqual(2);
+    links.forEach((link) => {
+      expect(link.getAttribute("tabindex")).toBe("0");
+    });
+  });
 
-    /* fileInput muss vor biasSwitch kommen */
-    expect(ids.indexOf("fileInput")).toBeLessThan(ids.indexOf("biasSwitch"));
+  it("ALL buttons and inputs (except honeypot) have explicit tabindex=0", () => {
+    const elements = document.querySelectorAll("button, input");
+    elements.forEach((el) => {
+      /* Honeypot überspringen */
+      if (el.id === "website") return;
+      const tab = el.getAttribute("tabindex");
+      expect(tab).toBe("0", `${el.tagName}#${el.id || el.className} fehlt tabindex="0" (Safari)`);
+    });
+  });
 
-    /* biasSwitch muss zwischen den zwei info-icons liegen */
+  it("ALL links have explicit tabindex=0", () => {
+    const links = document.querySelectorAll("a[href]");
+    links.forEach((link) => {
+      const tab = link.getAttribute("tabindex");
+      expect(tab).toBe("0", `Link "${link.textContent.trim()}" fehlt tabindex="0" (Safari)`);
+    });
+  });
+
+  it("tab order: skip → file → info1 → toggle → info2 → demos → links", () => {
+    const tabbable = Array.from(document.querySelectorAll('[tabindex="0"]')).filter((el) => !el.hidden);
+
+    /* Skip-link zuerst */
+    expect(tabbable[0].classList.contains("skip-link")).toBe(true);
+
+    /* fileInput vor biasSwitch */
+    const fileIdx = tabbable.findIndex((el) => el.id === "fileInput");
+    const toggleIdx = tabbable.findIndex((el) => el.id === "biasSwitch");
+    expect(fileIdx).toBeLessThan(toggleIdx);
+
+    /* biasSwitch zwischen den zwei info-icons */
     const infoIndices = [];
     tabbable.forEach((el, i) => {
       if (el.classList.contains("info-icon")) infoIndices.push(i);
     });
     expect(infoIndices.length).toBe(2);
-    const toggleIdx = tabbable.findIndex((el) => el.id === "biasSwitch");
     expect(toggleIdx).toBeGreaterThan(infoIndices[0]);
     expect(toggleIdx).toBeLessThan(infoIndices[1]);
-  });
-
-  it("modal is not visible by default (no focus trap active)", () => {
-    const modal = document.querySelector(".modal-overlay");
-    if (modal) {
-      expect(modal.classList.contains("active")).toBe(false);
-    }
   });
 });
