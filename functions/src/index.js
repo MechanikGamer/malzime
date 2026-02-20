@@ -7,7 +7,7 @@ const { getClientIp, checkRateLimit } = require("./middleware");
 const { parseMultipart, parseJsonBody } = require("./upload");
 const { analyzeWithVision } = require("./vision");
 const { buildPrivacyRisks } = require("./privacy");
-const { describeImage, buildDescriptionFromLabels, generateBothProfiles } = require("./gemini");
+const { describeImage, buildDescriptionFromLabels, generateBothProfiles, isQuotaError } = require("./gemini");
 const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
 
@@ -17,6 +17,7 @@ exports.analyze = onRequest(
   {
     region: "europe-west1",
     memory: "512MiB",
+    concurrency: 20,
     cors: ["https://malzi.me", "https://www.malzi.me", "https://malzime.web.app", "https://malzime.firebaseapp.com"],
     invoker: "public",
     maxInstances: 10,
@@ -210,6 +211,7 @@ exports.analyze = onRequest(
       let imageDescription = null;
       let describeBlocked = false;
       let describeError = false;
+      let quotaError = false;
       try {
         imageDescription = await describeImage(imageBuffer, file.mimeType, remainingBudget, lang);
         if (!imageDescription) describeBlocked = true;
@@ -222,6 +224,7 @@ exports.analyze = onRequest(
           })
         );
       } catch (err) {
+        if (isQuotaError(err)) quotaError = true;
         describeError = true;
         console.log(JSON.stringify({ requestId, warning: "Image description failed", error: err.message }));
       }
@@ -267,6 +270,7 @@ exports.analyze = onRequest(
             JSON.stringify({ requestId, step: "profiles", normal: !!profiles.normal, boost: !!profiles.boost })
           );
         } catch (err) {
+          if (isQuotaError(err)) quotaError = true;
           profileBlocked = true;
           console.log(JSON.stringify({ requestId, warning: "Profile generation failed", error: err.message }));
         }
@@ -300,7 +304,9 @@ exports.analyze = onRequest(
         });
       } else {
         let blockedReason;
-        if (describeBlocked && !usedFallback) {
+        if (quotaError) {
+          blockedReason = "blocked.overloaded";
+        } else if (describeBlocked && !usedFallback) {
           blockedReason = "blocked.safetyFilter";
         } else if (describeBlocked && usedFallback && profileBlocked) {
           blockedReason = "blocked.safetyFilterFallback";

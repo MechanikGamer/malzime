@@ -10,8 +10,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# ── Cache-Busting-Version generieren ──
-VERSION=$(date +"%Y%m%d")$(printf "%02d" "$(date +%-H)")
+# ── Cache-Busting-Version generieren (sekundengenau, eindeutig pro Deploy) ──
+VERSION=$(date +"%Y%m%d%H%M%S")
 echo "Cache-Busting-Version: ?v=$VERSION"
 
 # Alle HTML-Dateien mit ?v= aktualisieren

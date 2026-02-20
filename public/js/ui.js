@@ -25,6 +25,12 @@ export function startScanAnim() {
   let idx = 0;
   const messages = t("scan.messages");
   const shuffled = [...(Array.isArray(messages) ? messages : [])].sort(() => Math.random() - 0.5);
+  if (shuffled.length === 0) {
+    /* BUG-104: Fallback wenn i18n-Laden fehlschlägt */
+    const fallback = "\u2026";
+    elements.scanText.textContent = fallback;
+    return;
+  }
   elements.scanText.textContent = shuffled[0];
   scanInterval = setInterval(() => {
     idx = (idx + 1) % shuffled.length;

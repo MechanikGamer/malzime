@@ -109,13 +109,11 @@ const project = process.env.GCLOUD_PROJECT || process.env.GOOGLE_CLOUD_PROJECT |
 
 **Datei:** `public/js/geocoding.js` (Zeile 17)
 
-Nominatim (OpenStreetMap Geocoding) verlangt einen eindeutigen User-Agent:
+Im Code steht ein `User-Agent`-Header fuer Nominatim (OpenStreetMap Geocoding). **Wichtig:** Browser ignorieren diesen Header stillschweigend — er hat keinen Effekt. Nominatim verwendet stattdessen den Standard-User-Agent deines Browsers, was fuer die Nutzung ausreichend ist.
+
+Du kannst den Wert trotzdem anpassen (er erscheint z.B. im Emulator oder bei Server-seitigem Geocoding):
 
 ```js
-// Vorher:
-headers: { "User-Agent": "malzime-workshop-demo/1.0" },
-
-// Nachher — dein Projektname:
 headers: { "User-Agent": "DEIN-PROJEKT-NAME/1.0" },
 ```
 
@@ -135,18 +133,11 @@ Diese Dateien enthalten malziME-spezifische Inhalte (Domain, Firma, Kontakt) die
 
 ### 5e. CI/CD (optional, nur bei GitHub Actions)
 
-**Datei:** `.github/workflows/deploy.yml` (Zeile 70, 73)
+**Datei:** `.github/workflows/ci.yml`
 
-```yaml
-# Zeile 70 — Hosting Deploy:
-projectId: DEIN-PROJEKT
+Der CI-Workflow laeuft automatisch bei Push und Pull Request. Er fuehrt Tests, Lint und Secret-Scan aus.
 
-# Zeile 73 — Functions Deploy:
-run: npx firebase-tools deploy --only functions --project DEIN-PROJEKT --force
-```
-
-Benoetigtes GitHub Secret:
-- `FIREBASE_SERVICE_ACCOUNT` — Service Account JSON deines Projekts
+Deploy ist manuell per `firebase deploy` — es gibt keinen automatischen Deploy-Workflow.
 
 ### 5f. Locale-Dateien (optional)
 
@@ -228,7 +219,7 @@ Bevor du live gehst:
 |-----|---------|-----|
 | **Vision API** | 1 Call, 2 Features | TEXT_DETECTION + LABEL_DETECTION |
 | **Gemini 2.5 Flash** | 3 Calls | 1x Bildbeschreibung (multimodal) + 2x Profil (normal + boost, parallel) |
-| **Cloud Functions** | 1 Invocation | ~5–15 Sekunden, 256 MB RAM |
+| **Cloud Functions** | 1 Invocation | ~5–15 Sekunden, 512 MiB RAM |
 
 ### Preise (Stand Februar 2026, Vertex AI Standard Tier)
 

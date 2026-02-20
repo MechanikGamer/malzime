@@ -71,7 +71,7 @@ npm run test:frontend
 ```
 
 **Backend (124 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian.
-**Frontend (69 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
+**Frontend (84 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
 
 ## 7. Linting + Formatting
 
@@ -117,7 +117,7 @@ Format: `?v=YYYYMMDDNN` (Datum + laufende Nummer)
 |-----|---------|-----|
 | **Vision API** | 1 Call, 2 Features | TEXT_DETECTION + LABEL_DETECTION |
 | **Gemini 2.5 Flash** | 3 Calls | 1x Bildbeschreibung (multimodal) + 2x Profil (normal + boost, parallel) |
-| **Cloud Functions** | 1 Invocation | ~5–15 Sekunden, 256 MB RAM |
+| **Cloud Functions** | 1 Invocation | ~5–15 Sekunden, 512 MiB RAM |
 
 Thinking ist deaktiviert (`thinkingBudget: 0`) fuer Kostenreduktion.
 
@@ -162,12 +162,10 @@ Die Privacy-Architektur ist ein Kernbestandteil des Projekts:
 
 ## CI/CD
 
-GitHub Actions Workflows:
-- **`ci.yml`** — Tests + Lint + Format bei jedem Push und Pull Request
-- **`deploy.yml`** — Tests + Lint + Format + Deploy auf Firebase bei Push auf `main`
+GitHub Actions Workflow:
+- **`ci.yml`** — Tests + Lint + Format + Secret-Scan bei jedem Push und Pull Request
 
-Benoetigtes GitHub Secret:
-- `FIREBASE_SERVICE_ACCOUNT` — Service Account JSON (fuer Hosting + Functions Deploy)
+Deploy ist manuell per `firebase deploy` (kein automatisches Deployment via CI).
 
 ## Eigene Instanz aufsetzen (Fork)
 

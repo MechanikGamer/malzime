@@ -2,6 +2,17 @@ const { VertexAI, HarmCategory, HarmBlockThreshold } = require("@google-cloud/ve
 const { DESCRIBE_MODELS, PROFILE_MODELS, API_TIMEOUT_MS } = require("./config");
 const { loadPrompts } = require("./i18n");
 
+function isQuotaError(err) {
+  const msg = (err.message || "").toLowerCase();
+  return (
+    (msg.includes("resource") && msg.includes("exhausted")) ||
+    msg.includes("quota") ||
+    msg.includes("too many requests") ||
+    msg.includes("429") ||
+    err.code === 8
+  );
+}
+
 function getSafetySettings() {
   return [
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -57,6 +68,7 @@ async function describeImageWithModel(vertexAI, modelName, imageBuffer, mimeType
 async function describeImage(imageBuffer, mimeType, remainingBudget, lang) {
   const prompts = loadPrompts(lang || "de");
   const vertexAI = getVertexAI();
+  let quotaHit = false;
 
   for (const modelName of DESCRIBE_MODELS) {
     try {
@@ -84,6 +96,7 @@ async function describeImage(imageBuffer, mimeType, remainingBudget, lang) {
         })
       );
     } catch (err) {
+      if (isQuotaError(err)) quotaHit = true;
       console.log(JSON.stringify({ step: "describe", model: modelName, status: "error", error: err.message }));
     }
   }
@@ -117,10 +130,16 @@ async function describeImage(imageBuffer, mimeType, remainingBudget, lang) {
         })
       );
     } catch (err) {
+      if (isQuotaError(err)) quotaHit = true;
       console.log(JSON.stringify({ step: "describe-neutral", model: modelName, status: "error", error: err.message }));
     }
   }
 
+  if (quotaHit) {
+    const e = new Error("API quota exceeded");
+    e.code = "quota_exceeded";
+    throw e;
+  }
   return null;
 }
 
@@ -171,6 +190,7 @@ ${prompts.jsonSchema}`;
 }
 
 async function runProfileWithFallback(vertexAI, prompt, temperature, mode, remainingBudget) {
+  let quotaHit = false;
   for (const modelName of PROFILE_MODELS) {
     const budget = remainingBudget ? remainingBudget() : undefined;
     if (budget != null && budget <= 0) break;
@@ -263,9 +283,15 @@ async function runProfileWithFallback(vertexAI, prompt, temperature, mode, remai
       }
     } catch (err) {
       clearTimeout(timeoutId);
+      if (isQuotaError(err)) quotaHit = true;
       console.log(JSON.stringify({ step: `profile-${mode}`, model: modelName, status: "error", error: err.message }));
       continue;
     }
+  }
+  if (quotaHit) {
+    const e = new Error("API quota exceeded");
+    e.code = "quota_exceeded";
+    throw e;
   }
   return null;
 }
@@ -305,4 +331,4 @@ async function generateBothProfiles(imageDescription, visionLabels, exifData, pr
   return { normal, boost };
 }
 
-module.exports = { describeImage, buildDescriptionFromLabels, generateBothProfiles, buildPrompt };
+module.exports = { describeImage, buildDescriptionFromLabels, generateBothProfiles, buildPrompt, isQuotaError };

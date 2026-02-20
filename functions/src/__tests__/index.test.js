@@ -17,10 +17,12 @@ jest.mock("../vision", () => ({
 const mockDescribeImage = jest.fn();
 const mockBuildDescriptionFromLabels = jest.fn();
 const mockGenerateBothProfiles = jest.fn();
+const mockIsQuotaError = jest.fn().mockReturnValue(false);
 jest.mock("../gemini", () => ({
   describeImage: mockDescribeImage,
   buildDescriptionFromLabels: mockBuildDescriptionFromLabels,
   generateBothProfiles: mockGenerateBothProfiles,
+  isQuotaError: mockIsQuotaError,
 }));
 
 const mockBuildPrivacyRisks = jest.fn();
@@ -79,6 +81,7 @@ beforeEach(() => {
   mockGetClientIp.mockReturnValue("127.0.0.1");
   mockCheckRateLimit.mockReturnValue(true);
   mockBuildPrivacyRisks.mockReturnValue([]);
+  mockIsQuotaError.mockReturnValue(false);
 });
 
 describe("analyze handler", () => {

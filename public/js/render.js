@@ -265,27 +265,21 @@ function renderSimulation(text) {
 
 /* ── Rendering: Datenwert-Rechner ── */
 
+/* Keys muessen zum JSON-Schema in prompts.js passen (categories-Objekt) */
 const DATA_VALUE_MAP = {
-  alter: 0.04,
-  geschlecht: 0.02,
+  alter_geschlecht: 0.06,
   herkunft: 0.06,
   einkommen: 0.14,
   bildung: 0.07,
-  beruf: 0.09,
-  persoenlichkeit: 0.05,
-  politik: 0.11,
-  gesundheit: 0.16,
-  beziehung: 0.07,
-  kaufkraft: 0.13,
-  religion: 0.08,
-  sexualitaet: 0.1,
+  beziehungsstatus: 0.07,
   interessen: 0.05,
-  emotionen: 0.06,
+  persoenlichkeit: 0.05,
+  charakterzuege: 0.05,
+  politisch: 0.11,
+  gesundheit: 0.16,
+  kaufkraft: 0.13,
   verletzlichkeit: 0.15,
-  wohnort: 0.08,
-  familienstand: 0.04,
-  fitness: 0.06,
-  ernaehrung: 0.07,
+  werbeprofil: 0.12,
 };
 const DATA_VALUE_DEFAULT = 0.06;
 const USERS_GLOBAL = 2_000_000_000;
