@@ -97,7 +97,7 @@ function closeModal() {
     currentKeyHandler = null;
   }
   if (previouslyFocused) {
-    previouslyFocused.focus();
+    previouslyFocused.focus({ preventScroll: true });
     previouslyFocused = null;
   }
 }
