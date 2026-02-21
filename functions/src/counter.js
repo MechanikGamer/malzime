@@ -5,8 +5,31 @@ const CURRENT_DOC = "stats/current";
 const TOTALS_DOC = "stats/totals";
 
 /**
+ * Filtert das recentAnalyses-Array: nur Timestamps der letzten windowMs behalten.
+ * Behandelt sowohl Firestore-Timestamps (.toMillis()) als auch plain Numbers.
+ */
+function filterRecent(arr, now, windowMs) {
+  return (arr || []).map((ts) => (ts && ts.toMillis ? ts.toMillis() : ts)).filter((ts) => now - ts < windowMs);
+}
+
+/**
+ * Berechnet die Sekunden bis der nächste Eintrag aus dem Fenster fällt
+ * und damit der Count unter das Limit sinkt.
+ */
+function calcRetrySeconds(recent, limit, now, windowMs) {
+  if (recent.length < limit) return 0;
+  const sorted = [...recent].sort((a, b) => a - b);
+  const pivotIndex = recent.length - limit; // dieser Eintrag muss rausfallen
+  return Math.max(1, Math.ceil((windowMs - (now - sorted[pivotIndex])) / 1000));
+}
+
+/**
  * Prüft ob das Limit erreicht ist und erhöht den Zähler.
- * Gibt { allowed, retryAfterSeconds, count, limit } zurück.
+ *
+ * Das Limit basiert auf einem echten rollenden Fenster: recentAnalyses
+ * enthält die Timestamps aller Analysen der letzten 60 Minuten.
+ * Sobald genug alte Einträge herausfallen, ist das System sofort wieder frei.
+ *
  * Bei Firestore-Fehler: fail-open (allowed: true).
  */
 async function checkAndIncrement() {
@@ -19,120 +42,47 @@ async function checkAndIncrement() {
       const data = snap.exists ? snap.data() : {};
 
       const limit = data.limit || HOURLY_LIMIT;
-      const windowMs = (data.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
+      const wm = data.windowMinutes || HOURLY_WINDOW_MINUTES;
+      const windowMs = wm * 60 * 1000;
       const now = Date.now();
 
-      const hourlyTotal = data.hourlyTotal || 0;
-      const wm = data.windowMinutes || HOURLY_WINDOW_MINUTES;
+      /* Rollendes Fenster: nur Analysen der letzten Stunde */
+      const recent = filterRecent(data.recentAnalyses, now, windowMs);
 
-      /* Limit war aktiv — prüfen ob das Zeitfenster abgelaufen ist */
-      if (data.limitReachedAt) {
-        const limitTime = data.limitReachedAt.toMillis ? data.limitReachedAt.toMillis() : data.limitReachedAt;
-        const elapsed = now - limitTime;
-
-        if (elapsed < windowMs) {
-          const retryAfterSeconds = Math.ceil((windowMs - elapsed) / 1000);
-          return { allowed: false, retryAfterSeconds, count: data.count || 0, limit, hourlyTotal };
-        }
-
-        /* Zeitfenster abgelaufen → alles zurücksetzen (neues Fenster) */
-        tx.set(ref, {
-          count: 1,
-          hourlyTotal: 1,
-          hourlyStartedAt: new Date(now),
-          limitReachedAt: null,
-          limit: HOURLY_LIMIT,
-          windowMinutes: wm,
-        });
-        return { allowed: true, retryAfterSeconds: 0, count: 1, limit: HOURLY_LIMIT, hourlyTotal: 1 };
-      }
-
-      /* Stunden-Fenster abgelaufen (ohne Limit-Erreichung) → hourlyTotal zurücksetzen */
-      if (data.hourlyStartedAt) {
-        const startTime = data.hourlyStartedAt.toMillis ? data.hourlyStartedAt.toMillis() : data.hourlyStartedAt;
-        if (now - startTime >= windowMs) {
-          tx.set(ref, {
-            count: 1,
-            hourlyTotal: 1,
-            hourlyStartedAt: new Date(now),
-            limitReachedAt: null,
-            limit,
-            windowMinutes: wm,
-          });
-          return { allowed: true, retryAfterSeconds: 0, count: 1, limit, hourlyTotal: 1 };
-        }
-      }
-
-      /* Admin-Reset erkannt: limitReachedAt gelöscht, aber count >= limit
-         → Limit-Zähler frisch starten, hourlyTotal weiterzählen */
-      const currentCount = data.count || 0;
-      if (!data.limitReachedAt && currentCount >= limit) {
-        const newHourly = hourlyTotal + 1;
-        tx.set(ref, {
-          count: 1,
-          hourlyTotal: newHourly,
-          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
-          limitReachedAt: null,
-          limit,
-          windowMinutes: wm,
-        });
-        return { allowed: true, retryAfterSeconds: 0, count: 1, limit, hourlyTotal: newHourly };
-      }
-
-      /* Normaler Betrieb: beide Zähler erhöhen */
-      const newCount = currentCount + 1;
-      const newHourly = hourlyTotal + 1;
-
-      if (newCount > limit) {
-        /* Über dem Limit (Sicherheitsnetz) */
-        tx.set(ref, {
-          count: newCount,
-          hourlyTotal: newHourly,
-          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
-          limitReachedAt: data.limitReachedAt || new Date(now),
-          limit,
-          windowMinutes: wm,
-        });
-        const retryAfterSeconds = Math.ceil(windowMs / 1000);
-        return { allowed: false, retryAfterSeconds, count: newCount, limit, hourlyTotal: newHourly };
-      }
-
-      if (newCount === limit) {
-        /* Limit gerade erreicht — letzte Analyse erlauben, dann sperren */
-        tx.set(ref, {
-          count: newCount,
-          hourlyTotal: newHourly,
-          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
-          limitReachedAt: new Date(now),
-          limit,
-          windowMinutes: wm,
-        });
+      /* Limit erreicht → blockieren */
+      if (recent.length >= limit) {
+        const retryAfterSeconds = calcRetrySeconds(recent, limit, now, windowMs);
         return {
-          allowed: true,
-          retryAfterSeconds: 0,
-          count: newCount,
+          allowed: false,
+          retryAfterSeconds,
+          count: recent.length,
           limit,
-          justReached: true,
-          hourlyTotal: newHourly,
+          hourlyTotal: recent.length,
         };
       }
 
-      /* Noch unter dem Limit */
+      /* Unter dem Limit → Analyse erlauben */
+      recent.push(now);
+      const justReached = recent.length === limit;
+
       if (snap.exists) {
-        const updates = { count: newCount, hourlyTotal: newHourly };
-        if (!data.hourlyStartedAt) updates.hourlyStartedAt = new Date(now);
-        tx.update(ref, updates);
+        tx.update(ref, { recentAnalyses: recent });
       } else {
         tx.set(ref, {
-          count: newCount,
-          hourlyTotal: newHourly,
-          hourlyStartedAt: new Date(now),
-          limitReachedAt: null,
+          recentAnalyses: recent,
           limit: HOURLY_LIMIT,
           windowMinutes: HOURLY_WINDOW_MINUTES,
         });
       }
-      return { allowed: true, retryAfterSeconds: 0, count: newCount, limit, hourlyTotal: newHourly };
+
+      return {
+        allowed: true,
+        retryAfterSeconds: 0,
+        count: recent.length,
+        limit,
+        hourlyTotal: recent.length,
+        justReached,
+      };
     });
 
     return result;
@@ -212,6 +162,7 @@ async function incrementTotals() {
 
 /**
  * Liest die aktuellen Stats für den öffentlichen API-Endpunkt.
+ * Alles basiert auf dem rollenden Fenster (recentAnalyses).
  */
 async function getStats() {
   try {
@@ -220,38 +171,26 @@ async function getStats() {
 
     const current = currentSnap.exists
       ? currentSnap.data()
-      : { count: 0, limit: HOURLY_LIMIT, windowMinutes: HOURLY_WINDOW_MINUTES };
+      : { limit: HOURLY_LIMIT, windowMinutes: HOURLY_WINDOW_MINUTES };
     const totals = totalsSnap.exists ? totalsSnap.data() : { today: 0, week: 0, month: 0, year: 0, allTime: 0 };
 
-    let retryAfterSeconds = 0;
-    if (current.limitReachedAt) {
-      const limitTime = current.limitReachedAt.toMillis ? current.limitReachedAt.toMillis() : current.limitReachedAt;
-      const windowMs = (current.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
-      const remaining = windowMs - (Date.now() - limitTime);
-      retryAfterSeconds = remaining > 0 ? Math.ceil(remaining / 1000) : 0;
-    }
-
     const currentLimit = current.limit || HOURLY_LIMIT;
-    const limitCount = current.count || 0;
-    const limitActive = retryAfterSeconds > 0 && limitCount >= currentLimit;
+    const wm = current.windowMinutes || HOURLY_WINDOW_MINUTES;
+    const windowMs = wm * 60 * 1000;
+    const now = Date.now();
 
-    /* hourlyTotal: Wenn das Stundenfenster abgelaufen ist, 0 anzeigen */
-    let reportedHourlyTotal = current.hourlyTotal || limitCount;
-    if (!limitActive && current.hourlyStartedAt) {
-      const startTime = current.hourlyStartedAt.toMillis ? current.hourlyStartedAt.toMillis() : current.hourlyStartedAt;
-      const windowMs = (current.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
-      if (Date.now() - startTime >= windowMs) {
-        reportedHourlyTotal = 0;
-      }
-    }
+    const recent = filterRecent(current.recentAnalyses, now, windowMs);
+    const recentCount = recent.length;
+    const limitActive = recentCount >= currentLimit;
+    const retryAfterSeconds = limitActive ? calcRetrySeconds(recent, currentLimit, now, windowMs) : 0;
 
     return {
       current: {
-        count: limitCount,
+        count: recentCount,
         limit: currentLimit,
         limitActive,
-        retryAfterSeconds: limitActive ? retryAfterSeconds : 0,
-        hourlyTotal: reportedHourlyTotal,
+        retryAfterSeconds,
+        hourlyTotal: recentCount,
       },
       totals: {
         today: totals.today || 0,
@@ -269,20 +208,30 @@ async function getStats() {
 
 /**
  * Erhöht das Limit um den angegebenen Betrag (Admin-Funktion, für ntfy-Buttons).
+ * Wenn der aktuelle Count unter dem neuen Limit liegt, ist das System sofort frei.
  */
 async function boostLimit(amount = 100) {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ limit: FieldValue.increment(amount), limitReachedAt: null });
+  await ref.update({ limit: FieldValue.increment(amount) });
 }
 
 /**
- * Setzt den Stunden-Zähler zurück (Admin-Funktion, für ntfy-Buttons).
+ * Setzt alles zurück (Admin-Funktion, für ntfy-Buttons).
+ * Leert recentAnalyses → Count sofort 0, System sofort frei.
  */
 async function resetCounter() {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ count: 0, limitReachedAt: null, limit: HOURLY_LIMIT });
+  await ref.update({ recentAnalyses: [], limit: HOURLY_LIMIT });
 }
 
-module.exports = { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter };
+module.exports = {
+  checkAndIncrement,
+  incrementTotals,
+  getStats,
+  boostLimit,
+  resetCounter,
+  filterRecent,
+  calcRetrySeconds,
+};
