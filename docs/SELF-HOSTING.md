@@ -33,6 +33,7 @@ Im Google Cloud Console unter **APIs & Services > Library** diese beiden APIs ak
 
 - **Cloud Vision API** — fuer Texterkennung und Label-Erkennung
 - **Vertex AI API** — fuer Gemini (Bildbeschreibung + Profilgenerierung)
+- **Cloud Firestore** — fuer den Analyse-Zaehler und das Stundenlimit (wird automatisch mit Firebase aktiviert)
 
 > **Wichtig**: Die EU Vision API (`eu-vision.googleapis.com`) unterstuetzt nur `TEXT_DETECTION` und `LABEL_DETECTION`. Andere Features wie `FACE_DETECTION` oder `OBJECT_LOCALIZATION` wuerden den gesamten API-Call crashen.
 
@@ -154,7 +155,30 @@ Wenn du die Texte anpassen oder eine neue Sprache hinzufuegen willst:
 - Backend: Erstelle `functions/src/locales/XX/prompts.js` + `XX/animals.js`, trage den Code in `manifest.json` ein
 - Testen mit `?lang=XX` in der URL
 
-### 5g. Spenden-Button (optional)
+### 5g. Firebase Secrets
+
+Die Cloud Functions benoetigen Firebase Secrets fuer Admin-Endpunkte und optionale Push-Benachrichtigungen:
+
+```bash
+# Pflicht: Admin-Token fuer Boost/Reset-Endpunkte
+firebase functions:secrets:set ADMIN_SECRET
+
+# Optional: ntfy Push-Benachrichtigungen bei Limit-Erreichung
+firebase functions:secrets:set NTFY_URL      # z.B. https://ntfy.example.com
+firebase functions:secrets:set NTFY_TOPIC    # z.B. malzime-alerts
+```
+
+Wenn du keine ntfy-Benachrichtigungen willst, setze die Secrets auf einen Platzhalter-Wert (z.B. `none`). Der Code erkennt ungueltige URLs und sendet dann keine Benachrichtigungen.
+
+### 5h. Stundenlimit anpassen (optional)
+
+Das Standard-Stundenlimit liegt bei 1000 Analysen/Stunde. Du kannst es in `functions/src/config.js` aendern:
+
+```js
+HOURLY_LIMIT: 1000,  // Maximale Analysen pro Stunde
+```
+
+### 5i. Spenden-Button (optional)
 
 **Datei:** `.github/FUNDING.yml`
 
@@ -208,6 +232,8 @@ Bevor du live gehst:
 - [ ] User-Agent in geocoding.js enthaelt deinen Projektnamen
 - [ ] Eigenes OG-Image erstellt
 - [ ] Locale-Dateien angepasst (falls gewuenscht)
+- [ ] Firebase Secrets gesetzt: ADMIN_SECRET (+ optional NTFY_URL, NTFY_TOPIC)
+- [ ] Firestore Security Rules deployed: `firebase deploy --only firestore`
 - [ ] Tests laufen: `cd functions && npm test` und `npm run test:frontend`
 - [ ] Lokal getestet: Bild hochladen funktioniert
 

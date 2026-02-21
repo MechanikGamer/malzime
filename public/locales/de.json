@@ -124,5 +124,16 @@
   "demo.label": "Kein Foto zur Hand? Probier ein Beispielbild:",
   "demo.selfie": "Selfie am Stephansplatz",
   "demo.cafe": "Im Café in Salzburg",
-  "demo.hiker": "Wanderung bei Hallstatt"
+  "demo.hiker": "Wanderung bei Hallstatt",
+
+  "limit.title": "Kurze Pause.",
+  "limit.text": "malziME wurde in dieser Stunde schon sehr oft genutzt und hat das Limit erreicht. Die Analyse ist vorübergehend deaktiviert, damit die Kosten nicht explodieren.",
+  "limit.textMuted": "malziME ist ein privat finanziertes Projekt — kostenlos, werbefrei und ohne Tracking. Dieses Limit schützt das Projekt vor unerwarteten Serverkosten.",
+  "limit.countdown": "Wieder verfügbar in {{time}}",
+  "limit.seconds": "Sekunden",
+  "limit.countdownDone": "Analyse wird wieder freigeschaltet…",
+  "limit.supportText": "Mit einer Spende hilfst du, die Limits zu erhöhen und malziME am Laufen zu halten.",
+  "limit.supportButton": "Projekt unterstützen",
+
+  "footer.stats": "Stats"
 }

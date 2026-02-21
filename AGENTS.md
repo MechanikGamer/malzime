@@ -13,7 +13,8 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
     geocoding.js     Nominatim Reverse Geocoding (client-seitig)
     render.js        Ergebnis-Rendering (Profile, EXIF, Karte, Datenwert)
     state.js         Globaler State (requestId, isAnalyzing)
-    ui.js            UI-Komponenten (Disclaimer-Modal, Scan-Animation, Bias-Toggle)
+    ui.js            UI-Komponenten (Disclaimer-Modal, Scan-Animation, Bias-Toggle, Limit-Banner)
+    stats.js         Stats-Seite: Fetch /api/stats, Limit-Balken, Countdown
     i18n.js          i18n Micro-Modul (initI18n, t, getLanguage, applyTranslations)
   locales/           Frontend-Locale-Dateien
     manifest.json    Verfuegbare Sprachen + Default
@@ -22,6 +23,7 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
   styles.css         Dark-Theme CSS + Print Styles + Self-hosted @font-face
   impressum.html     Impressum
   datenschutz.html   Datenschutzerklaerung
+  stats.html         Oeffentliche Nutzungsstatistik
   fonts/             Self-hosted: Inter + JetBrains Mono (woff2)
   lib/leaflet/       Self-hosted: Leaflet 1.9.4 (JS, CSS, Marker-Images)
   lib/exifr/         Self-hosted: exifr lite ESM (Browser EXIF-Parsing)
@@ -29,6 +31,8 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
 functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   index.js           HTTP-Handler: orchestriert Module, Tier-Check, Magic-Byte-Validierung
   config.js          Konstanten, Modell-Listen (Gemini 2.5 Flash), Limits
+  counter.js         Firestore-Zaehler: Stundenlimit, Totals, Stats, Boost, Reset
+  notify.js          ntfy Push-Benachrichtigungen bei Limit-Erreichung
   animal.js          Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
   demo-data.js       Vorgeschriebene Demo-Profile (normal + boost)
   middleware.js       Rate Limiting (IP-basiert, 200/10min), IP-Extraktion
@@ -51,8 +55,8 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (124 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (69 tests)
+- `cd functions && npm test` — run Jest backend unit tests (146 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (84 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend

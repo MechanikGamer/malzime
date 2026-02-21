@@ -20,6 +20,7 @@ Im [Google Cloud Console](https://console.cloud.google.com):
 
 - **Cloud Vision API** — Texterkennung + Label-Erkennung
 - **Vertex AI API** — Gemini Multimodal (Bildbeschreibung + Profilerstellung)
+- **Cloud Firestore** — Analyse-Zaehler + Stundenlimit (automatisch mit Firebase aktiviert)
 
 Region: `europe-west1` (Belgien, EU)
 
@@ -50,6 +51,24 @@ cp functions/.env.example functions/.env
 
 Fuer den EU-Endpoint der Vision API: In `functions/src/vision.js` wird `eu-vision.googleapis.com` verwendet.
 
+### Firebase Secrets
+
+Die folgenden Secrets werden ueber `firebase functions:secrets:set` konfiguriert:
+
+```bash
+firebase functions:secrets:set ADMIN_SECRET    # Beliebiger Token fuer Admin-Endpunkte
+firebase functions:secrets:set NTFY_URL        # ntfy Server-URL (z.B. https://ntfy.example.com)
+firebase functions:secrets:set NTFY_TOPIC      # ntfy Topic-Name
+```
+
+| Secret | Pflicht | Beschreibung |
+|--------|---------|--------------|
+| `ADMIN_SECRET` | Ja | Bearer-Token fuer Admin-Endpunkte (Boost, Reset) |
+| `NTFY_URL` | Nein | URL des ntfy-Servers fuer Push-Benachrichtigungen |
+| `NTFY_TOPIC` | Nein | ntfy-Topic fuer Limit-Benachrichtigungen |
+
+Wenn `NTFY_URL` oder `NTFY_TOPIC` leer sind, werden keine Push-Benachrichtigungen gesendet.
+
 ## 5. Lokal testen
 
 ```bash
@@ -70,8 +89,8 @@ cd functions && npm test
 npm run test:frontend
 ```
 
-**Backend (124 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian.
-**Frontend (84 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
+**Backend (146 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian, Firestore-Counter, ntfy-Benachrichtigungen.
+**Frontend (84 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
 
 ## 7. Linting + Formatting
 
@@ -207,7 +226,7 @@ Sprache per URL-Parameter testen: `https://malzi.me/?lang=XX`
 
 ## Hinweise
 
-- Rate Limits sind in-memory (pro Cloud Functions Instanz). Fuer High-Scale: externe Loesung (Redis/Firestore) verwenden
+- IP-basierte Rate Limits sind in-memory (pro Cloud Functions Instanz). Das globale Stundenlimit verwendet Firestore und ist instanzuebergreifend
 - Logs enthalten nur Request-ID, Status und Modell-Info — keine Bilddaten
 - Safety-Filter von Google blockieren die Bildbeschreibung bei Kinderfotos. Der Code hat einen mehrstufigen Fallback: alternativer Prompt, dann Vision-API-Labels
 - Alters-Labels der Vision API (Toddler, Baby, Infant, Newborn) werden gefiltert, da sie unzuverlaessig sind

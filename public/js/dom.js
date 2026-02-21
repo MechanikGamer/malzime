@@ -15,6 +15,8 @@ export const elements = {
   disclaimerModal: document.getElementById("disclaimerModal"),
   disclaimerConfirm: document.getElementById("disclaimerConfirm"),
   exportPdf: document.getElementById("exportPdf"),
+  limitBanner: document.getElementById("limitBanner"),
+  limitCountdown: document.getElementById("limitCountdown"),
 };
 
 export function escapeHtml(str) {

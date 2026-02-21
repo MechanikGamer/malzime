@@ -1,4 +1,7 @@
 {
+  "firestore": {
+    "rules": "firestore.rules"
+  },
   "functions": {
     "source": "functions",
     "runtime": "nodejs24"
@@ -68,6 +71,18 @@
       {
         "source": "/analyze",
         "function": "analyze"
+      },
+      {
+        "source": "/api/stats",
+        "function": "stats"
+      },
+      {
+        "source": "/api/admin/**",
+        "function": "admin"
+      },
+      {
+        "source": "/stats",
+        "destination": "/stats.html"
       },
       {
         "source": "/impressum",

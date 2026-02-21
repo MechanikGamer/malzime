@@ -106,6 +106,65 @@ export function dismissDisclaimerModal() {
   closeModal();
 }
 
+/* ── Limit-Banner ── */
+
+let countdownInterval = null;
+
+export function showLimitBanner(retryAfterSeconds) {
+  if (!elements.limitBanner) return;
+  elements.limitBanner.classList.add("active");
+
+  const uploadSection = document.querySelector(".upload-section");
+  const demoSection = document.querySelector(".demo-section");
+  if (uploadSection) uploadSection.classList.add("upload-section--limited");
+  if (demoSection) demoSection.classList.add("upload-section--limited");
+
+  startLimitCountdown(retryAfterSeconds);
+}
+
+export function hideLimitBanner() {
+  if (!elements.limitBanner) return;
+  elements.limitBanner.classList.remove("active");
+
+  const uploadSection = document.querySelector(".upload-section");
+  const demoSection = document.querySelector(".demo-section");
+  if (uploadSection) uploadSection.classList.remove("upload-section--limited");
+  if (demoSection) demoSection.classList.remove("upload-section--limited");
+
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+function startLimitCountdown(totalSeconds) {
+  if (countdownInterval) clearInterval(countdownInterval);
+  let remaining = totalSeconds;
+  updateCountdownText(remaining);
+
+  countdownInterval = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+      if (elements.limitCountdown) {
+        elements.limitCountdown.textContent = t("limit.countdownDone");
+      }
+      setTimeout(() => location.reload(), 2000);
+      return;
+    }
+    updateCountdownText(remaining);
+  }, 1000);
+}
+
+function updateCountdownText(seconds) {
+  if (!elements.limitCountdown) return;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  const time = m > 0 ? m + ":" + String(s).padStart(2, "0") + " Min" : s + " " + t("limit.seconds");
+  elements.limitCountdown.textContent = t("limit.countdown", { time });
+}
+
 /* ── PDF-Export Hilfsfunktionen ── */
 
 export function insertPrintNotes() {

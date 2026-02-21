@@ -1,6 +1,8 @@
 const { onRequest } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
 
+const { defineSecret } = require("firebase-functions/params");
+
 const { ALLOWED_MIME, MAX_UPLOAD_BYTES, REQUEST_BUDGET_MS } = require("./config");
 const { demoData } = require("./demo-data");
 const { getClientIp, checkRateLimit } = require("./middleware");
@@ -10,6 +12,12 @@ const { buildPrivacyRisks } = require("./privacy");
 const { describeImage, buildDescriptionFromLabels, generateBothProfiles, isQuotaError } = require("./gemini");
 const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
+const { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter } = require("./counter");
+const { notifyLimitReached } = require("./notify");
+
+const adminSecret = defineSecret("ADMIN_SECRET");
+const ntfyUrl = defineSecret("NTFY_URL");
+const ntfyTopic = defineSecret("NTFY_TOPIC");
 
 initializeApp();
 
@@ -22,6 +30,7 @@ exports.analyze = onRequest(
     invoker: "public",
     maxInstances: 10,
     timeoutSeconds: 120,
+    secrets: [ntfyUrl, ntfyTopic, adminSecret],
   },
   async (req, res) => {
     const requestId = Math.random().toString(36).slice(2, 10);
@@ -36,6 +45,27 @@ exports.analyze = onRequest(
       const ip = getClientIp(req);
       if (!checkRateLimit(ip)) {
         res.status(429).json({ error: "Rate limit exceeded" });
+        return;
+      }
+
+      /* ── Globales Stundenlimit (Firestore-Zähler) ── */
+      const counterResult = await checkAndIncrement();
+      if (!counterResult.allowed) {
+        /* ntfy-Push nur beim erstmaligen Erreichen (justReached) */
+        if (counterResult.justReached) {
+          notifyLimitReached({
+            ntfyUrl: ntfyUrl.value(),
+            ntfyTopic: ntfyTopic.value(),
+            adminSecret: adminSecret.value(),
+            count: counterResult.count,
+            limit: counterResult.limit,
+          }).catch(() => {});
+        }
+        res.status(429).json({
+          blocked: "limit",
+          retryAfterSeconds: counterResult.retryAfterSeconds,
+          message: "Stundenlimit erreicht",
+        });
         return;
       }
 
@@ -197,6 +227,7 @@ exports.analyze = onRequest(
 
         /* BUG-007: Privacy-Risks und EXIF auch bei Tier-Fotos durchreichen —
            ein sichtbares Nummernschild im Hintergrund soll trotzdem gemeldet werden */
+        incrementTotals().catch(() => {});
         res.json({
           profiles: { normal: normalProfile, boost: boostProfile },
           privacyRisks,
@@ -281,6 +312,7 @@ exports.analyze = onRequest(
       const hasAnyProfile = hasCategories(profiles.normal) || hasCategories(profiles.boost);
 
       if (hasAnyProfile) {
+        incrementTotals().catch(() => {});
         const normalData = profiles.normal || {};
         const boostData = profiles.boost || {};
         res.json({
@@ -345,6 +377,74 @@ exports.analyze = onRequest(
       const code = err.code || "unknown_error";
       console.log(JSON.stringify({ requestId, status: "error", code }));
       res.status(status).json({ error: "Analyze failed", code });
+    }
+  }
+);
+
+/* ── Stats-Endpunkt (öffentlich) ── */
+exports.stats = onRequest(
+  {
+    region: "europe-west1",
+    memory: "256MiB",
+    cors: ["https://malzi.me", "https://www.malzi.me", "https://malzime.web.app", "https://malzime.firebaseapp.com"],
+    invoker: "public",
+    maxInstances: 5,
+  },
+  async (req, res) => {
+    if (req.method !== "GET") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+    const data = await getStats();
+    if (!data) {
+      res.status(503).json({ error: "Stats unavailable" });
+      return;
+    }
+    res.json(data);
+  }
+);
+
+/* ── Admin-Endpunkte (nur mit ADMIN_SECRET) ── */
+exports.admin = onRequest(
+  {
+    region: "europe-west1",
+    memory: "256MiB",
+    cors: true,
+    invoker: "public",
+    maxInstances: 2,
+    secrets: [adminSecret],
+  },
+  async (req, res) => {
+    if (req.method !== "POST") {
+      res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    /* Auth prüfen */
+    const auth = req.headers["authorization"] || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!token || token !== adminSecret.value()) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const path = req.path || "";
+    try {
+      if (path === "/boost") {
+        const amount = (req.body && req.body.amount) || 100;
+        await boostLimit(Math.min(Math.max(Number(amount) || 100, 1), 10000));
+        const data = await getStats();
+        res.json({ ok: true, action: "boost", stats: data });
+      } else if (path === "/reset") {
+        await resetCounter();
+        const data = await getStats();
+        res.json({ ok: true, action: "reset", stats: data });
+      } else {
+        res.status(404).json({ error: "Unknown action" });
+      }
+    } catch (err) {
+      console.log(JSON.stringify({ warning: "admin-error", error: err.message }));
+      res.status(500).json({ error: "Admin action failed" });
     }
   }
 );

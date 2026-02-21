@@ -16,6 +16,8 @@ const ids = [
   "disclaimerModal",
   "disclaimerConfirm",
   "exportPdf",
+  "limitBanner",
+  "limitCountdown",
 ];
 
 export function setupDOM() {

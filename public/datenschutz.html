@@ -59,6 +59,7 @@
             <li><strong>Keine IP-Adresse dauerhaft</strong> &ndash; der Missbrauchsschutz merkt sich deine IP f&uuml;r maximal 10&nbsp;Minuten im Arbeitsspeicher, dann ist sie weg.</li>
           </ul>
         </div>
+        <p>Der <a href="/stats" tabindex="0">Analyse-Z&auml;hler</a> speichert ausschlie&szlig;lich eine einzige Zahl pro Zeitraum (Stunde, Tag, Woche, Monat, gesamt) &ndash; keine IP-Adressen, keine Bildinhalte, keine Nutzerprofile. Der Z&auml;hler dient dem Kostenschutz und der transparenten Nutzungsstatistik.</p>
         <p>Unsere Anwendungs-Logs enthalten nur eine zuf&auml;llige Anfrage-ID, den Status und technische Verarbeitungsschritte (genutztes Modell, Antwortl&auml;nge) &ndash; keine Bildinhalte, keine Profile, keine IP-Adressen. Google Cloud protokolliert bei Fehlern technische Daten (IP, Zeitstempel, Statuscode) &ndash; Routine-Logs haben wir ausgeschlossen, Fehler-Logs werden nach 1&nbsp;Tag gel&ouml;scht. Eine anonymisierte Fehlerzusammenfassung ohne personenbezogene Daten (nur Fehlermeldung und H&auml;ufigkeit) bleibt zur Fehlerbehebung bestehen &ndash; eine k&uuml;rzere Aufbewahrung ist technisch nicht m&ouml;glich.</p>
       </section>
       <!-- Wer ist beteiligt? -->
@@ -87,6 +88,11 @@
               <tr>
                 <td>Firebase Hosting &amp; Cloud Functions</td>
                 <td>Komprimiertes Foto + Kamera-Hersteller &amp; Modell (tempor&auml;r im RAM)</td>
+                <td>Google Ireland Ltd., EU (europe-west1)</td>
+              </tr>
+              <tr>
+                <td>Cloud Firestore</td>
+                <td>Anonymer Analyse-Z&auml;hler (nur Gesamtzahl pro Zeitraum, keine Nutzer- oder Bilddaten)</td>
                 <td>Google Ireland Ltd., EU (europe-west1)</td>
               </tr>
               <tr>
@@ -155,6 +161,8 @@
         <a href="/impressum" tabindex="0">Impressum</a>
         <span class="footer-sep">&middot;</span>
         <a href="/datenschutz" tabindex="0">Datenschutz</a>
+        <span class="footer-sep">&middot;</span>
+        <a href="/stats" tabindex="0">Stats</a>
       </div>
     </footer>
   </body>

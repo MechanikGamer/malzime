@@ -23,6 +23,7 @@ module.exports = [
         URL: "readonly",
         TextEncoder: "readonly",
         AbortController: "readonly",
+        fetch: "readonly",
       },
     },
     rules: {

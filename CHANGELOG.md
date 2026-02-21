@@ -4,6 +4,26 @@ Alle relevanten Aenderungen an malziME werden hier dokumentiert.
 
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.2.0] — 2026-02-21
+
+### Features
+
+- **Stundenlimit mit Firestore-Zaehler**: Globaler Analyse-Zaehler in Cloud Firestore mit konfigurierbarem Stundenlimit (Standard: 1000/Stunde). Fail-open bei Firestore-Fehlern — die App bleibt nutzbar, auch wenn die Datenbank kurzzeitig nicht erreichbar ist.
+- **Oeffentliche Stats-Seite**: Neue Seite unter `/stats` mit Live-Status, Gesamtzaehler, Zeitraum-Statistiken (Heute, Woche, Monat) und Limit-Balken. Vollstaendig anonym — keine personenbezogenen Daten.
+- **Limit-Banner auf Hauptseite**: Wenn das Stundenlimit erreicht ist, erscheint ein auffaelliger Banner mit Live-Countdown. Upload- und Demo-Bereich werden ausgegraut. Automatischer Reload nach Ablauf.
+- **Admin-Endpunkte**: `/api/admin/boost` (+100 Analysen) und `/api/admin/reset` (Zaehler zuruecksetzen) mit Bearer-Token-Authentifizierung via ADMIN_SECRET.
+- **ntfy Push-Benachrichtigungen**: Automatischer Push auf self-hosted ntfy wenn das Limit erstmals erreicht wird. Action-Buttons in der Benachrichtigung fuer Boost, Reset und Stats.
+
+### Datenschutz
+
+- **Datenschutzseite ergaenzt**: Neuer Absatz zum Analyse-Zaehler (nur aggregierte Zahlen, keine Nutzer- oder Bilddaten) + Cloud Firestore in der Dienste-Tabelle
+- **Counter speichert nur Zahlen**: Kein Bezug zu einzelnen Nutzern, keine IP-Adressen, keine Bildinhalte
+
+### Dokumentation
+
+- **Stats-Link im Footer**: Alle Seiten (Hauptseite, Impressum, Datenschutz, Stats) haben jetzt einen Stats-Link und konsistente Startseite-Links im Footer
+- **AGENTS.md, docs/SETUP.md, docs/SELF-HOSTING.md**: Neue Dateien und Endpunkte dokumentiert, Testanzahlen aktualisiert
+
 ## [1.1.1] — 2026-02-20
 
 ### Verbesserungen

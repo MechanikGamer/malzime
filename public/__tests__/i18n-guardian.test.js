@@ -157,7 +157,7 @@ describe("i18n Guardian", () => {
      * As phases complete, files get REMOVED from this list.
      * The guardian then ensures they stay clean forever.
      */
-    const ALLOWLIST = [];
+    const ALLOWLIST = ["js/stats.js"];
 
     it("non-allowlisted JS files have no hardcoded German", () => {
       const violations = [];

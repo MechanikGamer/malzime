@@ -87,6 +87,21 @@
         <p class="lead" data-i18n="hero.lead">Lade ein Bild hoch. Die KI erstellt in Sekunden ein komplettes Profil &uuml;ber dich &mdash; aus einem einzigen Foto.</p>
       </header>
 
+      <!-- Limit-Banner (hidden by default) -->
+      <div class="limit-banner" id="limitBanner" role="alert">
+        <div class="limit-banner__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        </div>
+        <p class="limit-banner__title" data-i18n="limit.title">Stundenlimit erreicht</p>
+        <p class="limit-banner__text" data-i18n="limit.text">Zu viele Analysen in kurzer Zeit. Bitte warte, bis das Limit zur&uuml;ckgesetzt wird.</p>
+        <p class="limit-banner__countdown" id="limitCountdown"></p>
+        <p class="limit-banner__muted" data-i18n="limit.textMuted">Das Limit sch&uuml;tzt das Projekt vor unerwarteten Kosten.</p>
+        <div class="limit-banner__cta">
+          <span data-i18n="limit.supportText">Du willst das Limit erh&ouml;hen?</span>
+          <a href="https://buymeacoffee.com/malzime" target="_blank" rel="noopener" class="support-btn" tabindex="0" data-i18n="limit.supportButton">Projekt unterst&uuml;tzen</a>
+        </div>
+      </div>
+
       <section class="upload-section">
         <label class="file-drop" for="fileInput">
           <input id="fileInput" type="file" accept="image/*" tabindex="0" />
@@ -204,6 +219,8 @@
         <a href="/impressum" tabindex="0" data-i18n="footer.impressum">Impressum</a>
         <span class="footer-sep">&middot;</span>
         <a href="/datenschutz" tabindex="0" data-i18n="footer.datenschutz">Datenschutz</a>
+        <span class="footer-sep">&middot;</span>
+        <a href="/stats" tabindex="0" data-i18n="footer.stats">Stats</a>
       </div>
     </footer>
 

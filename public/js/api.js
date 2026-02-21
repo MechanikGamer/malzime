@@ -2,7 +2,7 @@ import { elements } from "./dom.js";
 import { state } from "./state.js";
 import { prepareImage } from "./exif.js";
 import { startGeocoding } from "./geocoding.js";
-import { setStatus, startScanAnim, stopScanAnim, showDisclaimerModal } from "./ui.js";
+import { setStatus, startScanAnim, stopScanAnim, showDisclaimerModal, showLimitBanner } from "./ui.js";
 import { renderCurrentMode } from "./render.js";
 import { t, getLanguage } from "./i18n.js";
 
@@ -105,6 +105,17 @@ export async function analyzeImage() {
     if (!response.ok) {
       let msg = t("error.generic");
       if (response.status === 429) {
+        /* Limit-Block vom Firestore-Zähler erkennen */
+        try {
+          const body = await response.clone().json();
+          if (body.blocked === "limit") {
+            showLimitBanner(body.retryAfterSeconds || 600);
+            setStatus(t("error.rateLimit"));
+            return;
+          }
+        } catch (_) {
+          /* parse failed — normales Rate Limit */
+        }
         msg = t("error.rateLimit");
       } else if (response.status === 413) {
         msg = t("error.imageTooLarge");
