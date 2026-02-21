@@ -43,8 +43,8 @@ async function loadStats() {
     if (!res.ok) throw new Error(res.status);
     const data = await res.json();
 
-    /* Zahlen einsetzen */
-    el.liveCount.textContent = fmt(data.current.count);
+    /* Zahlen einsetzen — hourlyTotal ist die echte Anzahl (unabhängig von Resets) */
+    el.liveCount.textContent = fmt(data.current.hourlyTotal);
     el.totalValue.textContent = fmt(data.totals.allTime);
     el.todayValue.textContent = fmt(data.totals.today);
     el.weekValue.textContent = fmt(data.totals.week);

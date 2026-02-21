@@ -22,6 +22,8 @@ async function checkAndIncrement() {
       const windowMs = (data.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
       const now = Date.now();
 
+      const hourlyTotal = data.hourlyTotal || 0;
+
       /* Limit war aktiv — prüfen ob das Zeitfenster abgelaufen ist */
       if (data.limitReachedAt) {
         const limitTime = data.limitReachedAt.toMillis ? data.limitReachedAt.toMillis() : data.limitReachedAt;
@@ -29,70 +31,84 @@ async function checkAndIncrement() {
 
         if (elapsed < windowMs) {
           const retryAfterSeconds = Math.ceil((windowMs - elapsed) / 1000);
-          return { allowed: false, retryAfterSeconds, count: data.count || 0, limit };
+          return { allowed: false, retryAfterSeconds, count: data.count || 0, limit, hourlyTotal };
         }
 
-        /* Zeitfenster abgelaufen → Zähler und Limit zurücksetzen */
+        /* Zeitfenster abgelaufen → alles zurücksetzen (neues Fenster) */
         tx.set(ref, {
           count: 1,
+          hourlyTotal: 1,
           limitReachedAt: null,
           limit: HOURLY_LIMIT,
           windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
-        return { allowed: true, retryAfterSeconds: 0, count: 1, limit: HOURLY_LIMIT };
+        return { allowed: true, retryAfterSeconds: 0, count: 1, limit: HOURLY_LIMIT, hourlyTotal: 1 };
       }
 
       /* Admin-Reset erkannt: limitReachedAt gelöscht, aber count >= limit
-         → Zähler frisch starten statt sofort wieder zu blockieren */
+         → Limit-Zähler frisch starten, hourlyTotal weiterzählen */
       const currentCount = data.count || 0;
       if (!data.limitReachedAt && currentCount >= limit) {
+        const newHourly = hourlyTotal + 1;
         tx.set(ref, {
           count: 1,
+          hourlyTotal: newHourly,
           limitReachedAt: null,
           limit,
           windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
-        return { allowed: true, retryAfterSeconds: 0, count: 1, limit };
+        return { allowed: true, retryAfterSeconds: 0, count: 1, limit, hourlyTotal: newHourly };
       }
 
-      /* Normaler Betrieb: Zähler erhöhen */
+      /* Normaler Betrieb: beide Zähler erhöhen */
       const newCount = currentCount + 1;
+      const newHourly = hourlyTotal + 1;
 
       if (newCount > limit) {
         /* Über dem Limit (Sicherheitsnetz) */
         tx.set(ref, {
           count: newCount,
+          hourlyTotal: newHourly,
           limitReachedAt: data.limitReachedAt || new Date(now),
           limit,
           windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
         const retryAfterSeconds = Math.ceil(windowMs / 1000);
-        return { allowed: false, retryAfterSeconds, count: newCount, limit };
+        return { allowed: false, retryAfterSeconds, count: newCount, limit, hourlyTotal: newHourly };
       }
 
       if (newCount === limit) {
         /* Limit gerade erreicht — letzte Analyse erlauben, dann sperren */
         tx.set(ref, {
           count: newCount,
+          hourlyTotal: newHourly,
           limitReachedAt: new Date(now),
           limit,
           windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
-        return { allowed: true, retryAfterSeconds: 0, count: newCount, limit, justReached: true };
+        return {
+          allowed: true,
+          retryAfterSeconds: 0,
+          count: newCount,
+          limit,
+          justReached: true,
+          hourlyTotal: newHourly,
+        };
       }
 
       /* Noch unter dem Limit */
       if (snap.exists) {
-        tx.update(ref, { count: newCount });
+        tx.update(ref, { count: newCount, hourlyTotal: newHourly });
       } else {
         tx.set(ref, {
           count: newCount,
+          hourlyTotal: newHourly,
           limitReachedAt: null,
           limit: HOURLY_LIMIT,
           windowMinutes: HOURLY_WINDOW_MINUTES,
         });
       }
-      return { allowed: true, retryAfterSeconds: 0, count: newCount, limit };
+      return { allowed: true, retryAfterSeconds: 0, count: newCount, limit, hourlyTotal: newHourly };
     });
 
     return result;
@@ -191,20 +207,17 @@ async function getStats() {
       retryAfterSeconds = remaining > 0 ? Math.ceil(remaining / 1000) : 0;
     }
 
-    const rawCount = current.count || 0;
     const currentLimit = current.limit || HOURLY_LIMIT;
-    const limitActive = retryAfterSeconds > 0 && rawCount >= currentLimit;
-
-    /* Nach Admin-Reset: count >= limit aber keine Sperre → wird beim nächsten
-       Request automatisch auf 0 zurückgesetzt, also 0 anzeigen */
-    const displayCount = !limitActive && rawCount >= currentLimit ? 0 : rawCount;
+    const limitCount = current.count || 0;
+    const limitActive = retryAfterSeconds > 0 && limitCount >= currentLimit;
 
     return {
       current: {
-        count: displayCount,
+        count: limitCount,
         limit: currentLimit,
         limitActive,
         retryAfterSeconds: limitActive ? retryAfterSeconds : 0,
+        hourlyTotal: current.hourlyTotal || limitCount,
       },
       totals: {
         today: totals.today || 0,

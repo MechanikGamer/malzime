@@ -34,7 +34,7 @@ describe("checkAndIncrement", () => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
         exists: true,
-        data: () => ({ count: 50, limit: 1000, windowMinutes: 60, limitReachedAt: null }),
+        data: () => ({ count: 50, hourlyTotal: 50, limit: 1000, windowMinutes: 60, limitReachedAt: null }),
       });
       return fn(tx);
     });
@@ -42,6 +42,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(51);
+    expect(result.hourlyTotal).toBe(51);
     expect(result.retryAfterSeconds).toBe(0);
   });
 
@@ -50,7 +51,7 @@ describe("checkAndIncrement", () => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
         exists: true,
-        data: () => ({ count: 999, limit: 1000, windowMinutes: 60, limitReachedAt: null }),
+        data: () => ({ count: 999, hourlyTotal: 999, limit: 1000, windowMinutes: 60, limitReachedAt: null }),
       });
       return fn(tx);
     });
@@ -58,6 +59,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(1000);
+    expect(result.hourlyTotal).toBe(1000);
     expect(result.justReached).toBe(true);
   });
 
@@ -67,7 +69,13 @@ describe("checkAndIncrement", () => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
         exists: true,
-        data: () => ({ count: 1000, limit: 1000, windowMinutes: 60, limitReachedAt: { toMillis: () => fiveMinAgo } }),
+        data: () => ({
+          count: 1000,
+          hourlyTotal: 1000,
+          limit: 1000,
+          windowMinutes: 60,
+          limitReachedAt: { toMillis: () => fiveMinAgo },
+        }),
       });
       return fn(tx);
     });
@@ -75,6 +83,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(false);
     expect(result.count).toBe(1000);
+    expect(result.hourlyTotal).toBe(1000);
     expect(result.retryAfterSeconds).toBeGreaterThan(3200);
   });
 
@@ -101,7 +110,13 @@ describe("checkAndIncrement", () => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
         exists: true,
-        data: () => ({ count: 1000, limit: 1000, windowMinutes: 60, limitReachedAt: { toMillis: () => twoHoursAgo } }),
+        data: () => ({
+          count: 1000,
+          hourlyTotal: 1000,
+          limit: 1000,
+          windowMinutes: 60,
+          limitReachedAt: { toMillis: () => twoHoursAgo },
+        }),
       });
       return fn(tx);
     });
@@ -109,6 +124,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(1);
+    expect(result.hourlyTotal).toBe(1);
   });
 
   test("allows after admin reset when count >= limit but limitReachedAt cleared", async () => {
@@ -116,7 +132,7 @@ describe("checkAndIncrement", () => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
         exists: true,
-        data: () => ({ count: 500, limit: 500, windowMinutes: 60, limitReachedAt: null }),
+        data: () => ({ count: 500, hourlyTotal: 500, limit: 500, windowMinutes: 60, limitReachedAt: null }),
       });
       return fn(tx);
     });
@@ -124,6 +140,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(1);
+    expect(result.hourlyTotal).toBe(501);
   });
 
   test("initializes document when it does not exist", async () => {
@@ -136,6 +153,7 @@ describe("checkAndIncrement", () => {
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
     expect(result.count).toBe(1);
+    expect(result.hourlyTotal).toBe(1);
   });
 
   test("fail-open on Firestore error", async () => {
@@ -239,16 +257,32 @@ describe("getStats", () => {
         exists: true,
         data: () =>
           path === "stats/current"
-            ? { count: 42, limit: 1000, windowMinutes: 60, limitReachedAt: null }
+            ? { count: 42, hourlyTotal: 55, limit: 1000, windowMinutes: 60, limitReachedAt: null }
             : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
       }),
     }));
 
     const result = await getStats();
     expect(result.current.count).toBe(42);
+    expect(result.current.hourlyTotal).toBe(55);
     expect(result.current.limit).toBe(1000);
     expect(result.current.limitActive).toBe(false);
     expect(result.totals.allTime).toBe(1000);
+  });
+
+  test("hourlyTotal falls back to count when field missing", async () => {
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? { count: 42, limit: 1000, windowMinutes: 60, limitReachedAt: null }
+            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.current.hourlyTotal).toBe(42);
   });
 
   test("calculates retryAfterSeconds when limit is active", async () => {
