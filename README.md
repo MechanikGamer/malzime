@@ -41,20 +41,24 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 public/                     Firebase Hosting (SPA, kein Build-Schritt)
   index.html                Hauptseite
   app.js                    Entry Point (ES Module)
-  js/                       Frontend-Module (api, dom, exif, geocoding, i18n, render, state, ui)
+  js/                       Frontend-Module (api, dom, demo, exif, geocoding, i18n, render, state, stats, ui)
   locales/                  Frontend-Locale-Dateien (de.json, manifest.json)
   styles.css                Dark-Theme CSS + Print Styles
   __tests__/                Vitest Frontend-Tests
   impressum.html            Impressum
   datenschutz.html          Datenschutzerklaerung
+  stats.html                Oeffentliche Nutzungsstatistik
   fonts/                    Self-hosted: Inter + JetBrains Mono (woff2)
   lib/leaflet/              Self-hosted: Leaflet 1.9.4
   lib/exifr/                Self-hosted: exifr lite (EXIF-Parsing im Browser)
 
 functions/src/              Firebase Cloud Functions (2nd Gen, Node 24, europe-west1)
-  index.js                  HTTP-Handler (analyze-Endpunkt, Tier-Check, Magic-Byte-Validierung)
+  index.js                  HTTP-Handler (analyze + stats + admin Endpunkte)
   config.js                 Konstanten, Modell-Listen, Limits
   animal.js                 Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
+  counter.js                Firestore-Zaehler: Stundenlimit, Totals, Stats, Boost, Reset
+  auth.js                   HMAC-basierte Admin-Token + Nonces
+  notify.js                 ntfy Push-Benachrichtigungen bei Limit-Erreichung
   middleware.js              Rate Limiting (IP-basiert, 200/10min), IP-Extraktion
   upload.js                 Multipart- und JSON-Body-Parsing
   vision.js                 Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
@@ -146,7 +150,7 @@ Detaillierte Anleitung: [`docs/SETUP.md`](docs/SETUP.md) | Eigene Instanz aufset
 }
 ```
 
-`mode` kann sein: `multimodal`, `demo`, `animal`, `blocked`
+`mode` kann sein: `multimodal`, `animal`, `blocked`
 
 Bei Tieren enthalten `profiles.normal` und `profiles.boost` ein lustiges Easter-Egg-Profil.
 Bei blockierten Bildern ist `profiles: null` und `blockedReason` enthaelt den Grund.
@@ -161,17 +165,23 @@ Bei blockierten Bildern ist `profiles: null` und `blockedReason` enthaelt den Gr
 - **Honeypot-Feld** gegen Bots
 - **Rate Limiting**: 200 Requests / 10 Minuten pro IP
 - **Timing-Check**: Requests innerhalb von 2s nach Seitenaufruf werden verzoegert
-- **Prompt-Injection-Schutz**: User-Daten in XML-Tags isoliert, Gemini ignoriert Anweisungen darin
-- **Keine Datenspeicherung**: Alles im RAM, keine Datenbank, kein Logging von Bilddaten
+- **Prompt-Injection-Schutz**: User-Daten in XML-Tags isoliert + escapeXml() auf dynamische Inhalte
+- **HMAC-Admin-Tokens**: Kurzlebige signierte Tokens (30 Min) + Nonces (5 Min) fuer Admin-Aktionen
+- **Stundenlimit**: Rollendes 60-Minuten-Fenster (500 Analysen/Stunde, anonyme Timestamps in Firestore)
+- **Keine Datenspeicherung**: Bilder und Profile nur im RAM, kein Logging von Bilddaten
 
 ## Tests
 
 ```bash
-# Backend (Jest, 124 Tests)
+# Backend (Jest, 187 Tests)
 cd functions && npm test
 
-# Frontend (Vitest + jsdom, 69 Tests)
+# Frontend (Vitest + jsdom, 126 Tests)
 npm run test:frontend
+
+# Coverage
+cd functions && npm run test:coverage
+npm run test:frontend:coverage
 
 # Linting
 cd functions && npm run lint           # Backend ESLint
@@ -180,9 +190,9 @@ cd functions && npm run format:check   # Backend Prettier
 npm run format:frontend:check          # Frontend Prettier
 ```
 
-**Backend (124 Tests):** HTTP-Handler, Tier-Erkennung (Word-Boundary-Matching), Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, EXIF-Sanitization, i18n-Guardian.
+**Backend (187 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Nonce-Flow, Tier-Erkennung, Config, Counter, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, XML-Escaping, ntfy-Benachrichtigungen, i18n-Guardian.
 
-**Frontend (69 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Geocoding, Render-Pipeline, API-Integration (mit fetch-Mock), i18n-Modul, i18n-Guardian.
+**Frontend (126 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, Stats-Seite, i18n-Modul, i18n-Guardian.
 
 ## CI/CD
 
