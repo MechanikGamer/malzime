@@ -1848,8 +1848,10 @@ h1 {
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
-  object-position: top;
   display: block;
+}
+.demo-thumb[data-demo="cafe"] img {
+  object-position: top;
 }
 
 .demo-caption {
