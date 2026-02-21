@@ -179,18 +179,12 @@ async function getStats() {
     const windowMs = wm * 60 * 1000;
     const now = Date.now();
 
-    const rawLength = (current.recentAnalyses || []).length;
     const recent = filterRecent(current.recentAnalyses, now, windowMs);
     const recentCount = recent.length;
     const limitActive = recentCount >= currentLimit;
     const retryAfterSeconds = limitActive ? calcRetrySeconds(recent, currentLimit, now, windowMs) : 0;
 
-    /* Cleanup: alte Eintraege in Firestore bereinigen (fire-and-forget) */
-    if (rawLength - recentCount >= 10) {
-      db.doc(CURRENT_DOC)
-        .update({ recentAnalyses: recent })
-        .catch(() => {});
-    }
+    /* BUG-002: Kein Cleanup-Write auf dem Read-Pfad — Cleanup passiert in checkAndIncrement(). */
 
     return {
       current: {
@@ -221,7 +215,7 @@ async function getStats() {
 async function boostLimit(amount = 100) {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ limit: FieldValue.increment(amount) });
+  await ref.set({ limit: FieldValue.increment(amount) }, { merge: true });
 }
 
 /**
@@ -231,7 +225,7 @@ async function boostLimit(amount = 100) {
 async function resetCounter() {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ recentAnalyses: [], limit: HOURLY_LIMIT });
+  await ref.set({ recentAnalyses: [], limit: HOURLY_LIMIT }, { merge: true });
 }
 
 module.exports = {

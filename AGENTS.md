@@ -40,7 +40,7 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   vision.js          Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
   privacy.js         Privacy-Risiko-Erkennung aus OCR/Labels
   gemini.js          Vertex AI Gemini: Bildbeschreibung (multimodal) + Profilgenerierung (text)
-  auth.js            HMAC-basierte Admin-Token (createAdminToken, verifyAdminToken)
+  auth.js            HMAC-basierte Admin-Token + Nonces (createAdminToken, verifyAdminToken, createNonce, verifyNonce)
   i18n.js            Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
   locales/           Backend-Locale-Dateien
     manifest.json    Verfuegbare Sprachen + Default
@@ -56,8 +56,8 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (186 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (125 tests)
+- `cd functions && npm test` — run Jest backend unit tests (210 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (126 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend
@@ -105,7 +105,8 @@ docs/                Setup-Dokumentation
 - Never commit secrets or API keys
 - CSP headers configured in `firebase.json`
 - Honeypot field for bot protection
-- Prompt-Injection-Schutz: User-Daten in XML-Tags isoliert
+- Prompt-Injection-Schutz: User-Daten in XML-Tags isoliert + escapeXml() auf dynamische Inhalte
+- Admin-Aktionen: GET zeigt Bestaetigungsseite, POST+Nonce fuehrt Mutation aus (SEC-001)
 
 ## EU Vision API Einschraenkungen
 

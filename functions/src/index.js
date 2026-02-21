@@ -14,7 +14,7 @@ const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
 const { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter } = require("./counter");
 const { notifyLimitReached } = require("./notify");
-const { verifyAdminToken } = require("./auth");
+const { verifyAdminToken, createNonce, verifyNonce } = require("./auth");
 
 const adminSecret = defineSecret("ADMIN_SECRET");
 const ntfyUrl = defineSecret("NTFY_URL");
@@ -46,29 +46,6 @@ exports.analyze = onRequest(
       const ip = getClientIp(req);
       if (!checkRateLimit(ip)) {
         res.status(429).json({ error: "Rate limit exceeded" });
-        return;
-      }
-
-      /* ── Globales Stundenlimit (Firestore-Zähler) ── */
-      const counterResult = await checkAndIncrement();
-
-      /* ntfy-Push beim erstmaligen Erreichen des Limits */
-      if (counterResult.justReached) {
-        notifyLimitReached({
-          ntfyUrl: ntfyUrl.value(),
-          ntfyTopic: ntfyTopic.value(),
-          adminSecret: adminSecret.value(),
-          count: counterResult.count,
-          limit: counterResult.limit,
-        }).catch(() => {});
-      }
-
-      if (!counterResult.allowed) {
-        res.status(429).json({
-          blocked: "limit",
-          retryAfterSeconds: counterResult.retryAfterSeconds,
-          message: "Stundenlimit erreicht",
-        });
         return;
       }
 
@@ -201,6 +178,31 @@ exports.analyze = onRequest(
       }
       if (file.size > MAX_UPLOAD_BYTES) {
         res.status(413).json({ error: "File too large" });
+        return;
+      }
+
+      /* ── Globales Stundenlimit (Firestore-Zähler) ──
+         Erst NACH Honeypot/Demo/Validierung zählen, damit ungültige Requests
+         nicht das Budget aufbrauchen (BUG-001). */
+      const counterResult = await checkAndIncrement();
+
+      /* ntfy-Push beim erstmaligen Erreichen des Limits */
+      if (counterResult.justReached) {
+        notifyLimitReached({
+          ntfyUrl: ntfyUrl.value(),
+          ntfyTopic: ntfyTopic.value(),
+          adminSecret: adminSecret.value(),
+          count: counterResult.count,
+          limit: counterResult.limit,
+        }).catch(() => {});
+      }
+
+      if (!counterResult.allowed) {
+        res.status(429).json({
+          blocked: "limit",
+          retryAfterSeconds: counterResult.retryAfterSeconds,
+          message: "Stundenlimit erreicht",
+        });
         return;
       }
 
@@ -413,13 +415,7 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-function adminConfirmPage(title, message) {
-  const safeTitle = escapeHtml(title);
-  const safeMessage = escapeHtml(message);
-  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${safeTitle} — malziME</title><meta http-equiv="refresh" content="3;url=/stats">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0}
+const ADMIN_PAGE_STYLE = `*,*::before,*::after{box-sizing:border-box;margin:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#0a0c10;color:#c8cdd8;
   display:flex;align-items:center;justify-content:center;min-height:100vh;
   position:relative;overflow:hidden}
@@ -428,20 +424,64 @@ body::before{content:'';position:fixed;inset:0;
   pointer-events:none;z-index:1}
 .card{text-align:center;padding:2.5rem 3rem;background:#161921;border:1px solid #1e222d;
   border-radius:12px;position:relative;z-index:2;max-width:400px;width:90%}
-.icon{width:64px;height:64px;border-radius:50%;background:rgba(74,222,128,.12);
+.icon{width:64px;height:64px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;
-  font-size:1.75rem;color:#4ade80}
+  font-size:1.75rem}
+.icon--warn{background:rgba(251,191,36,.12);color:#fbbf24}
+.icon--ok{background:rgba(74,222,128,.12);color:#4ade80}
 .title{font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:#e8ecf4;margin-bottom:.5rem}
 .msg{color:#9ca3af;font-size:.9rem;line-height:1.5;margin-bottom:1.25rem}
+.btn{display:inline-block;padding:.6rem 1.5rem;background:rgba(56,189,248,.1);
+  border:1px solid rgba(56,189,248,.25);border-radius:6px;color:#38bdf8;
+  font-size:.9rem;cursor:pointer;transition:background .2s;font-family:inherit}
+.btn:hover{background:rgba(56,189,248,.2)}
 .link{display:inline-block;padding:.5rem 1.25rem;background:rgba(56,189,248,.1);
   border:1px solid rgba(56,189,248,.25);border-radius:6px;color:#38bdf8;
   text-decoration:none;font-size:.85rem;transition:background .2s}
 .link:hover{background:rgba(56,189,248,.2)}
 .redirect{color:#6b7280;font-size:.75rem;margin-top:1rem}
-</style></head>
+.cancel{color:#6b7280;font-size:.8rem;margin-top:.75rem}
+.cancel a{color:#9ca3af;text-decoration:none}
+.cancel a:hover{color:#e8ecf4}`;
+
+/**
+ * SEC-001: Bestaetigungsseite — zeigt Warnung + POST-Formular mit Nonce.
+ * Wird bei GET+HMAC angezeigt, fuehrt KEINE Mutation aus.
+ */
+function adminConfirmPage(action, title, message, nonce) {
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
+  const safeAction = escapeHtml(action);
+  const safeNonce = escapeHtml(nonce);
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${safeTitle} — malziME</title>
+<style>${ADMIN_PAGE_STYLE}</style></head>
 <body>
 <div class="card">
-  <div class="icon">&#10003;</div>
+  <div class="icon icon--warn">&#9888;</div>
+  <div class="title">${safeTitle}</div>
+  <p class="msg">${safeMessage}</p>
+  <form method="POST" action="/${safeAction}">
+    <input type="hidden" name="nonce" value="${safeNonce}">
+    <button type="submit" class="btn">Bestaetigen</button>
+  </form>
+  <p class="cancel"><a href="/stats">&larr; Abbrechen</a></p>
+</div>
+</body></html>`;
+}
+
+/**
+ * Erfolgsseite — wird nach erfolgreicher Mutation angezeigt.
+ */
+function adminSuccessPage(title, message) {
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${safeTitle} — malziME</title><meta http-equiv="refresh" content="3;url=/stats">
+<style>${ADMIN_PAGE_STYLE}</style></head>
+<body>
+<div class="card">
+  <div class="icon icon--ok">&#10003;</div>
   <div class="title">${safeTitle}</div>
   <p class="msg">${safeMessage}</p>
   <a href="/stats" class="link">Stats ansehen &rarr;</a>
@@ -463,36 +503,60 @@ exports.admin = onRequest(
     const path = req.path || "";
     const action = path.includes("boost") ? "boost" : path.includes("reset") ? "reset" : "";
 
-    /* Auth: Bearer-Header (POST) ODER HMAC-Token (GET, fuer ntfy-Links) */
+    /* Auth: Bearer (POST), HMAC (GET → Bestaetigungsseite), oder Nonce (POST → Mutation) */
     const auth = req.headers["authorization"] || "";
     const bearerToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
     const hmacToken = req.query.hmac || "";
+    const nonceToken = (req.body && req.body.nonce) || "";
 
     const isBearerAuth = bearerToken && bearerToken === adminSecret.value();
     const isHmacAuth = hmacToken && action && verifyAdminToken(hmacToken, action, adminSecret.value());
+    const isNonceAuth =
+      nonceToken && action && req.method === "POST" && verifyNonce(nonceToken, action, adminSecret.value());
 
-    if (!isBearerAuth && !isHmacAuth) {
+    if (!isBearerAuth && !isHmacAuth && !isNonceAuth) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
 
     try {
-      if (path === "/boost" || path === "/api/admin/boost") {
-        const amount = (req.body && req.body.amount) || req.query.amount || 100;
-        await boostLimit(Math.min(Math.max(Number(amount) || 100, 1), 500));
-        const data = await getStats();
-        if (isHmacAuth) {
+      /* SEC-001: GET+HMAC → Bestaetigungsseite (KEINE Mutation) */
+      if (isHmacAuth && req.method === "GET") {
+        const nonce = createNonce(action, adminSecret.value());
+        if (action === "boost") {
           res
             .type("html")
-            .send(adminConfirmPage("Boost", `+100 Analysen hinzugefuegt. Neues Limit: ${data.current.limit}`));
+            .send(adminConfirmPage("boost", "Boost bestaetigen", "Limit um 100 Analysen erhoehen?", nonce));
+        } else if (action === "reset") {
+          res
+            .type("html")
+            .send(adminConfirmPage("reset", "Reset bestaetigen", "Stundenzaehler komplett zuruecksetzen?", nonce));
+        } else {
+          res.status(404).json({ error: "Unknown action" });
+        }
+        return;
+      }
+
+      /* Mutation ausfuehren (POST+Bearer oder POST+Nonce) */
+      if (path === "/boost" || path === "/api/admin/boost") {
+        /* SEC-002: Nonce-Auth bekommt immer 100. Custom Amount nur per Bearer. */
+        const amount = isNonceAuth
+          ? 100
+          : Math.min(Math.max(Number((req.body && req.body.amount) || 100) || 100, 1), 500);
+        await boostLimit(amount);
+        const data = await getStats();
+        if (isNonceAuth) {
+          res
+            .type("html")
+            .send(adminSuccessPage("Boost", `+100 Analysen hinzugefuegt. Neues Limit: ${data.current.limit}`));
         } else {
           res.json({ ok: true, action: "boost", stats: data });
         }
       } else if (path === "/reset" || path === "/api/admin/reset") {
         await resetCounter();
         const data = await getStats();
-        if (isHmacAuth) {
-          res.type("html").send(adminConfirmPage("Reset", "Stundenzaehler zurueckgesetzt."));
+        if (isNonceAuth) {
+          res.type("html").send(adminSuccessPage("Reset", "Stundenzaehler zurueckgesetzt."));
         } else {
           res.json({ ok: true, action: "reset", stats: data });
         }

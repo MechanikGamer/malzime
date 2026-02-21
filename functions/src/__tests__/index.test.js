@@ -9,6 +9,24 @@ jest.mock("firebase-functions/v2/https", () => ({
   onRequest: jest.fn((opts, handler) => handler),
 }));
 
+const mockCheckAndIncrement = jest.fn();
+const mockIncrementTotals = jest.fn();
+const mockGetStats = jest.fn();
+const mockBoostLimit = jest.fn();
+const mockResetCounter = jest.fn();
+jest.mock("../counter", () => ({
+  checkAndIncrement: mockCheckAndIncrement,
+  incrementTotals: mockIncrementTotals,
+  getStats: mockGetStats,
+  boostLimit: mockBoostLimit,
+  resetCounter: mockResetCounter,
+}));
+
+const mockNotifyLimitReached = jest.fn();
+jest.mock("../notify", () => ({
+  notifyLimitReached: mockNotifyLimitReached,
+}));
+
 const mockAnalyzeWithVision = jest.fn();
 jest.mock("../vision", () => ({
   analyzeWithVision: mockAnalyzeWithVision,
@@ -82,6 +100,9 @@ beforeEach(() => {
   mockCheckRateLimit.mockReturnValue(true);
   mockBuildPrivacyRisks.mockReturnValue([]);
   mockIsQuotaError.mockReturnValue(false);
+  mockCheckAndIncrement.mockResolvedValue({ allowed: true, count: 1, limit: 500 });
+  mockIncrementTotals.mockResolvedValue();
+  mockNotifyLimitReached.mockResolvedValue();
 });
 
 describe("analyze handler", () => {
@@ -907,6 +928,101 @@ describe("analyze handler", () => {
     expect(res.body.profiles).toBeNull();
     expect(res.body.blockedReason).toBeDefined();
     expect(res.body.meta.mode).toBe("blocked");
+  });
+
+  /* ── BUG-001: Counter only after validation ── */
+  test("honeypot request does NOT call checkAndIncrement (BUG-001)", async () => {
+    mockParseJsonBody.mockReturnValue({
+      website: "bot-spam",
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+  });
+
+  test("demo request does NOT call checkAndIncrement (BUG-001)", async () => {
+    mockParseJsonBody.mockReturnValue({ demoImageId: "demo-1" });
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(res.body.meta.mode).toBe("demo");
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+  });
+
+  test("missing image does NOT call checkAndIncrement (BUG-001)", async () => {
+    mockParseJsonBody.mockReturnValue({});
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+  });
+
+  test("invalid magic bytes does NOT call checkAndIncrement (BUG-001)", async () => {
+    const fakeBuffer = Buffer.from([0x00, 0x00, 0x00, 0x00]);
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: fakeBuffer.toString("base64"),
+      mimeType: "image/jpeg",
+    });
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+  });
+
+  test("valid upload calls checkAndIncrement (BUG-001)", async () => {
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    mockAnalyzeWithVision.mockResolvedValue({
+      labels: ["Person"],
+      landmarks: [],
+      ocrText: "",
+      ocrTextRaw: "",
+      faces: [],
+      objects: [],
+    });
+    mockDescribeImage.mockResolvedValue("A person");
+    mockGenerateBothProfiles.mockResolvedValue({
+      normal: {
+        categories: { a: { label: "A", value: "v", confidence: 0.5 } },
+        ad_targeting: [],
+        manipulation_triggers: [],
+        profileText: "",
+      },
+      boost: null,
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(mockCheckAndIncrement).toHaveBeenCalledTimes(1);
+  });
+
+  test("returns 429 when hourly limit reached (BUG-001)", async () => {
+    mockCheckAndIncrement.mockResolvedValue({
+      allowed: false,
+      count: 500,
+      limit: 500,
+      retryAfterSeconds: 1800,
+    });
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.body.blocked).toBe("limit");
+    expect(res.body.retryAfterSeconds).toBe(1800);
   });
 
   /* ── Generic animal (not dog/cat/bird specific) ── */

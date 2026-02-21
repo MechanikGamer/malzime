@@ -13,6 +13,16 @@ function isQuotaError(err) {
   );
 }
 
+/** SEC-003: Escapet Sonderzeichen die XML-Tags aufbrechen koennten */
+function escapeXml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function getSafetySettings() {
   return [
     { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -176,14 +186,20 @@ function buildDescriptionFromLabels(visionResult, exif, lang) {
 }
 
 function buildPrompt(prompts, systemContext, imageDescription, labelsContext, exifContext, privacyContext) {
+  /* SEC-003: Dynamische Inhalte escapen um Prompt-Injection via XML-Tags zu verhindern */
+  const safeDesc = escapeXml(imageDescription);
+  const safeLabels = labelsContext ? escapeXml(labelsContext) : "";
+  const safeExif = exifContext ? escapeXml(exifContext) : "";
+  const safePrivacy = privacyContext ? escapeXml(privacyContext) : "";
+
   return `${systemContext}
 
 ${prompts.injectionWarning}
 
 <bildbeschreibung>
-${imageDescription}
+${safeDesc}
 </bildbeschreibung>
-${labelsContext ? `\n<vision_labels>${labelsContext}</vision_labels>` : ""}${exifContext ? `\n<exif_daten>${exifContext}</exif_daten>` : ""}${privacyContext ? `\n<privacy_risiken>${privacyContext}</privacy_risiken>` : ""}
+${safeLabels ? `\n<vision_labels>${safeLabels}</vision_labels>` : ""}${safeExif ? `\n<exif_daten>${safeExif}</exif_daten>` : ""}${safePrivacy ? `\n<privacy_risiken>${safePrivacy}</privacy_risiken>` : ""}
 
 ${prompts.workshopNote}
 ${prompts.jsonSchema}`;
@@ -331,4 +347,11 @@ async function generateBothProfiles(imageDescription, visionLabels, exifData, pr
   return { normal, boost };
 }
 
-module.exports = { describeImage, buildDescriptionFromLabels, generateBothProfiles, buildPrompt, isQuotaError };
+module.exports = {
+  describeImage,
+  buildDescriptionFromLabels,
+  generateBothProfiles,
+  buildPrompt,
+  escapeXml,
+  isQuotaError,
+};

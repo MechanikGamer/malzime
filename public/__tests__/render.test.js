@@ -88,6 +88,34 @@ describe("Render helpers", () => {
     });
   });
 
+  describe("Confidence zero handling (BUG-004)", () => {
+    it("renders confidence=0 as 0% instead of treating it as missing", async () => {
+      const { renderCurrentMode } = await import("../js/render.js");
+
+      const mockData = {
+        profiles: {
+          normal: {
+            categories: { alter: { label: "Alter", value: "25", confidence: 0 } },
+            ad_targeting: [],
+            manipulation_triggers: [],
+            profileText: "Test",
+          },
+          boost: null,
+        },
+        privacyRisks: [],
+        exif: {},
+        meta: { requestId: "test", mode: "multimodal" },
+      };
+
+      renderCurrentMode(mockData);
+
+      /* Category card should show 0% */
+      expect(elements.facts.innerHTML).toContain("0%");
+      /* Data value should use confidence 0, not fallback 0.5 */
+      expect(elements.dataValue.innerHTML).not.toContain("NaN");
+    });
+  });
+
   describe("Animal mode", () => {
     it("hides data value for animal profiles", async () => {
       const { renderCurrentMode } = await import("../js/render.js");

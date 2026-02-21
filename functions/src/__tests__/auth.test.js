@@ -1,6 +1,6 @@
 /* Tests for auth.js — HMAC-based admin tokens */
 
-const { createAdminToken, verifyAdminToken } = require("../auth");
+const { createAdminToken, verifyAdminToken, createNonce, verifyNonce, NONCE_TTL_MS } = require("../auth");
 
 describe("createAdminToken", () => {
   test("returns token in format expires.signature", () => {
@@ -73,5 +73,39 @@ describe("verifyAdminToken", () => {
   test("rejects non-string input", () => {
     expect(verifyAdminToken(42, "boost", SECRET)).toBe(false);
     expect(verifyAdminToken({}, "boost", SECRET)).toBe(false);
+  });
+});
+
+/* ── Nonce (SEC-001) ── */
+
+describe("createNonce / verifyNonce", () => {
+  const SECRET = "test-secret-123";
+
+  test("creates a valid nonce that can be verified", () => {
+    const nonce = createNonce("boost", SECRET);
+    expect(verifyNonce(nonce, "boost", SECRET)).toBe(true);
+  });
+
+  test("nonce has shorter TTL than admin token", () => {
+    expect(NONCE_TTL_MS).toBeLessThan(30 * 60 * 1000);
+    expect(NONCE_TTL_MS).toBe(5 * 60 * 1000);
+  });
+
+  test("nonce expires within 5 minutes", () => {
+    const nonce = createNonce("boost", SECRET);
+    const expires = Number(nonce.split(".")[0]);
+    const diff = expires - Date.now();
+    expect(diff).toBeLessThanOrEqual(NONCE_TTL_MS);
+    expect(diff).toBeGreaterThan(0);
+  });
+
+  test("rejects nonce with wrong action", () => {
+    const nonce = createNonce("boost", SECRET);
+    expect(verifyNonce(nonce, "reset", SECRET)).toBe(false);
+  });
+
+  test("rejects nonce with wrong secret", () => {
+    const nonce = createNonce("boost", SECRET);
+    expect(verifyNonce(nonce, "boost", "wrong")).toBe(false);
   });
 });

@@ -394,6 +394,27 @@ describe("getStats", () => {
     expect(result.current.limit).toBe(500);
     expect(result.totals.allTime).toBe(0);
   });
+
+  test("does not write to Firestore (BUG-002, read-only path)", async () => {
+    const now = Date.now();
+    /* Create many stale entries that would have triggered cleanup before */
+    const staleEntries = Array.from({ length: 50 }, (_, i) => now - (i + 1) * 120 * 60 * 1000);
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path.includes("current")
+            ? { recentAnalyses: staleEntries, limit: 500, windowMinutes: 60 }
+            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+      }),
+      update: mockUpdate,
+      set: mockSet,
+    }));
+
+    await getStats();
+    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockSet).not.toHaveBeenCalled();
+  });
 });
 
 /* ── boostLimit ── */
@@ -401,12 +422,12 @@ describe("getStats", () => {
 describe("boostLimit", () => {
   test("increments limit by specified amount", async () => {
     await boostLimit(200);
-    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 200 } });
+    expect(mockSet).toHaveBeenCalledWith({ limit: { __increment: 200 } }, { merge: true });
   });
 
   test("defaults to 100 when no amount given", async () => {
     await boostLimit();
-    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 100 } });
+    expect(mockSet).toHaveBeenCalledWith({ limit: { __increment: 100 } }, { merge: true });
   });
 });
 
@@ -415,6 +436,6 @@ describe("boostLimit", () => {
 describe("resetCounter", () => {
   test("clears recentAnalyses and resets limit", async () => {
     await resetCounter();
-    expect(mockUpdate).toHaveBeenCalledWith({ recentAnalyses: [], limit: 500 });
+    expect(mockSet).toHaveBeenCalledWith({ recentAnalyses: [], limit: 500 }, { merge: true });
   });
 });

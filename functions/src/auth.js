@@ -37,4 +37,21 @@ function verifyAdminToken(token, action, secret) {
   return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
-module.exports = { createAdminToken, verifyAdminToken, DEFAULT_TTL_MS };
+const NONCE_TTL_MS = 5 * 60 * 1000; // 5 Minuten
+
+/**
+ * Erstellt eine kurzlebige Nonce fuer Admin-Bestaetigungsseiten (SEC-001).
+ * Format: {expires}.{signature} — wie ein Token, aber mit 5 Min TTL.
+ */
+function createNonce(action, secret) {
+  return createAdminToken(action, secret, NONCE_TTL_MS);
+}
+
+/**
+ * Validiert eine Nonce. Wrapper um verifyAdminToken.
+ */
+function verifyNonce(nonce, action, secret) {
+  return verifyAdminToken(nonce, action, secret);
+}
+
+module.exports = { createAdminToken, verifyAdminToken, createNonce, verifyNonce, DEFAULT_TTL_MS, NONCE_TTL_MS };

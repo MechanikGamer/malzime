@@ -60,7 +60,7 @@ jest.mock("../i18n", () => ({
   loadPrompts: jest.fn(),
 }));
 
-const { createAdminToken } = require("../auth");
+const { createAdminToken, createNonce } = require("../auth");
 const { admin } = require("../index");
 
 function mockReq(overrides = {}) {
@@ -160,15 +160,17 @@ describe("admin handler", () => {
     expect(mockBoostLimit).toHaveBeenCalled();
   });
 
-  test("boost with valid HMAC (GET) returns HTML", async () => {
+  test("boost with valid HMAC (GET) returns confirmation page, no mutation (SEC-001)", async () => {
     const token = createAdminToken("boost", TEST_SECRET);
     const req = mockReq({ path: "/boost", query: { hmac: token } });
     const res = mockRes();
     await admin(req, res);
     expect(res.type).toHaveBeenCalledWith("html");
     expect(res.send).toHaveBeenCalled();
-    expect(res.htmlBody).toContain("Boost");
-    expect(mockBoostLimit).toHaveBeenCalled();
+    expect(res.htmlBody).toContain("Bestaetigen");
+    expect(res.htmlBody).toContain('<form method="POST"');
+    expect(res.htmlBody).toContain('name="nonce"');
+    expect(mockBoostLimit).not.toHaveBeenCalled();
   });
 
   /* ── Reset with valid auth ── */
@@ -187,15 +189,16 @@ describe("admin handler", () => {
     expect(mockResetCounter).toHaveBeenCalled();
   });
 
-  test("reset with valid HMAC (GET) returns HTML", async () => {
+  test("reset with valid HMAC (GET) returns confirmation page, no mutation (SEC-001)", async () => {
     const token = createAdminToken("reset", TEST_SECRET);
     const req = mockReq({ path: "/reset", query: { hmac: token } });
     const res = mockRes();
     await admin(req, res);
     expect(res.type).toHaveBeenCalledWith("html");
     expect(res.send).toHaveBeenCalled();
-    expect(res.htmlBody).toContain("Reset");
-    expect(mockResetCounter).toHaveBeenCalled();
+    expect(res.htmlBody).toContain("Bestaetigen");
+    expect(res.htmlBody).toContain('<form method="POST"');
+    expect(mockResetCounter).not.toHaveBeenCalled();
   });
 
   /* ── Boost cap ── */
@@ -223,6 +226,80 @@ describe("admin handler", () => {
     expect(mockBoostLimit).toHaveBeenCalledWith(100);
   });
 
+  /* ── SEC-001: Nonce-based POST executes mutation ── */
+
+  test("boost with valid nonce (POST) executes mutation and returns HTML", async () => {
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockBoostLimit).toHaveBeenCalledWith(100);
+    expect(res.type).toHaveBeenCalledWith("html");
+    expect(res.htmlBody).toContain("Boost");
+    expect(res.htmlBody).not.toContain("Bestaetigen");
+  });
+
+  test("reset with valid nonce (POST) executes mutation and returns HTML", async () => {
+    const nonce = createNonce("reset", TEST_SECRET);
+    const req = mockReq({ path: "/reset", method: "POST", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockResetCounter).toHaveBeenCalled();
+    expect(res.type).toHaveBeenCalledWith("html");
+    expect(res.htmlBody).toContain("Reset");
+  });
+
+  test("expired nonce returns 403", async () => {
+    const nonce = createNonce("boost", TEST_SECRET);
+    /* Manipulate nonce to be expired: replace timestamp with past value */
+    const expiredNonce = `${Date.now() - 1000}.${nonce.split(".")[1]}`;
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce: expiredNonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockBoostLimit).not.toHaveBeenCalled();
+  });
+
+  test("nonce for wrong action returns 403", async () => {
+    const nonce = createNonce("reset", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockBoostLimit).not.toHaveBeenCalled();
+  });
+
+  test("nonce via GET is rejected (only POST allowed)", async () => {
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "GET", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockBoostLimit).not.toHaveBeenCalled();
+  });
+
+  /* ── SEC-002: HMAC ignores amount ── */
+
+  test("Nonce boost always uses 100, ignores body amount (SEC-002)", async () => {
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce, amount: 999 } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockBoostLimit).toHaveBeenCalledWith(100);
+  });
+
+  test("Bearer boost accepts custom amount from body", async () => {
+    const req = mockReq({
+      path: "/boost",
+      method: "POST",
+      headers: { authorization: `Bearer ${TEST_SECRET}` },
+      body: { amount: 200 },
+    });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockBoostLimit).toHaveBeenCalledWith(200);
+  });
+
   /* ── Unknown action ── */
 
   test("returns 404 for unknown action", async () => {
@@ -238,13 +315,13 @@ describe("admin handler", () => {
 
   /* ── HTML escaping ── */
 
-  test("HTML in boost response is escaped", async () => {
+  test("HTML in boost success page is escaped", async () => {
     mockGetStats.mockResolvedValue({
       current: { count: 100, limit: 600, limitActive: false, retryAfterSeconds: 0, hourlyTotal: 100 },
       totals: { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
     });
-    const token = createAdminToken("boost", TEST_SECRET);
-    const req = mockReq({ path: "/boost", query: { hmac: token } });
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce } });
     const res = mockRes();
     await admin(req, res);
     expect(res.htmlBody).not.toContain("<script>");

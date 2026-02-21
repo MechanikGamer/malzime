@@ -77,7 +77,7 @@ function renderCategories(profile) {
 
   elements.facts.innerHTML = entries
     .map(([key, cat]) => {
-      const pct = Math.round((cat.confidence || 0) * 100);
+      const pct = Math.round((typeof cat.confidence === "number" ? cat.confidence : 0) * 100);
       const cls = pct >= 70 ? "high" : pct >= 40 ? "med" : "low";
       return `
         <div class="cat-card" data-key="${escapeHtml(key)}">
@@ -294,7 +294,7 @@ function computeDataValue(profile) {
 
   for (const [key, cat] of entries) {
     const baseVal = DATA_VALUE_MAP[key] || DATA_VALUE_DEFAULT;
-    const conf = cat.confidence || 0.5;
+    const conf = typeof cat.confidence === "number" ? cat.confidence : 0.5;
     const val = baseVal * conf;
     total += val;
     breakdown.push({ label: cat.label, value: val, confidence: conf });
