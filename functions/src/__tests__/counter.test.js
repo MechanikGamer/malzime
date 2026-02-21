@@ -127,6 +127,54 @@ describe("checkAndIncrement", () => {
     expect(result.hourlyTotal).toBe(1);
   });
 
+  test("resets hourlyTotal when hourly window expired without limit", async () => {
+    const twoHoursAgo = Date.now() - 120 * 60 * 1000;
+    mockRunTransaction.mockImplementation(async (fn) => {
+      const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
+      tx.get.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          count: 200,
+          hourlyTotal: 200,
+          limit: 500,
+          windowMinutes: 60,
+          limitReachedAt: null,
+          hourlyStartedAt: { toMillis: () => twoHoursAgo },
+        }),
+      });
+      return fn(tx);
+    });
+
+    const result = await checkAndIncrement();
+    expect(result.allowed).toBe(true);
+    expect(result.count).toBe(1);
+    expect(result.hourlyTotal).toBe(1);
+  });
+
+  test("keeps counting when hourly window still active", async () => {
+    const tenMinAgo = Date.now() - 10 * 60 * 1000;
+    mockRunTransaction.mockImplementation(async (fn) => {
+      const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
+      tx.get.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          count: 50,
+          hourlyTotal: 50,
+          limit: 500,
+          windowMinutes: 60,
+          limitReachedAt: null,
+          hourlyStartedAt: { toMillis: () => tenMinAgo },
+        }),
+      });
+      return fn(tx);
+    });
+
+    const result = await checkAndIncrement();
+    expect(result.allowed).toBe(true);
+    expect(result.count).toBe(51);
+    expect(result.hourlyTotal).toBe(51);
+  });
+
   test("allows after admin reset when count >= limit but limitReachedAt cleared", async () => {
     mockRunTransaction.mockImplementation(async (fn) => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
@@ -301,6 +349,30 @@ describe("getStats", () => {
     expect(result.current.limitActive).toBe(true);
     expect(result.current.retryAfterSeconds).toBeGreaterThan(3200);
     expect(result.current.retryAfterSeconds).toBeLessThanOrEqual(3300);
+  });
+
+  test("reports hourlyTotal as 0 when hourly window expired", async () => {
+    const twoHoursAgo = Date.now() - 120 * 60 * 1000;
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? {
+                count: 0,
+                hourlyTotal: 200,
+                limit: 500,
+                windowMinutes: 60,
+                limitReachedAt: null,
+                hourlyStartedAt: { toMillis: () => twoHoursAgo },
+              }
+            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.current.hourlyTotal).toBe(0);
+    expect(result.current.limitActive).toBe(false);
   });
 
   test("returns null on Firestore error", async () => {

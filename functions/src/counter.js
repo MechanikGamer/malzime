@@ -23,6 +23,7 @@ async function checkAndIncrement() {
       const now = Date.now();
 
       const hourlyTotal = data.hourlyTotal || 0;
+      const wm = data.windowMinutes || HOURLY_WINDOW_MINUTES;
 
       /* Limit war aktiv — prüfen ob das Zeitfenster abgelaufen ist */
       if (data.limitReachedAt) {
@@ -38,11 +39,28 @@ async function checkAndIncrement() {
         tx.set(ref, {
           count: 1,
           hourlyTotal: 1,
+          hourlyStartedAt: new Date(now),
           limitReachedAt: null,
           limit: HOURLY_LIMIT,
-          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+          windowMinutes: wm,
         });
         return { allowed: true, retryAfterSeconds: 0, count: 1, limit: HOURLY_LIMIT, hourlyTotal: 1 };
+      }
+
+      /* Stunden-Fenster abgelaufen (ohne Limit-Erreichung) → hourlyTotal zurücksetzen */
+      if (data.hourlyStartedAt) {
+        const startTime = data.hourlyStartedAt.toMillis ? data.hourlyStartedAt.toMillis() : data.hourlyStartedAt;
+        if (now - startTime >= windowMs) {
+          tx.set(ref, {
+            count: 1,
+            hourlyTotal: 1,
+            hourlyStartedAt: new Date(now),
+            limitReachedAt: null,
+            limit,
+            windowMinutes: wm,
+          });
+          return { allowed: true, retryAfterSeconds: 0, count: 1, limit, hourlyTotal: 1 };
+        }
       }
 
       /* Admin-Reset erkannt: limitReachedAt gelöscht, aber count >= limit
@@ -53,9 +71,10 @@ async function checkAndIncrement() {
         tx.set(ref, {
           count: 1,
           hourlyTotal: newHourly,
+          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
           limitReachedAt: null,
           limit,
-          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+          windowMinutes: wm,
         });
         return { allowed: true, retryAfterSeconds: 0, count: 1, limit, hourlyTotal: newHourly };
       }
@@ -69,9 +88,10 @@ async function checkAndIncrement() {
         tx.set(ref, {
           count: newCount,
           hourlyTotal: newHourly,
+          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
           limitReachedAt: data.limitReachedAt || new Date(now),
           limit,
-          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+          windowMinutes: wm,
         });
         const retryAfterSeconds = Math.ceil(windowMs / 1000);
         return { allowed: false, retryAfterSeconds, count: newCount, limit, hourlyTotal: newHourly };
@@ -82,9 +102,10 @@ async function checkAndIncrement() {
         tx.set(ref, {
           count: newCount,
           hourlyTotal: newHourly,
+          hourlyStartedAt: data.hourlyStartedAt || new Date(now),
           limitReachedAt: new Date(now),
           limit,
-          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+          windowMinutes: wm,
         });
         return {
           allowed: true,
@@ -98,11 +119,14 @@ async function checkAndIncrement() {
 
       /* Noch unter dem Limit */
       if (snap.exists) {
-        tx.update(ref, { count: newCount, hourlyTotal: newHourly });
+        const updates = { count: newCount, hourlyTotal: newHourly };
+        if (!data.hourlyStartedAt) updates.hourlyStartedAt = new Date(now);
+        tx.update(ref, updates);
       } else {
         tx.set(ref, {
           count: newCount,
           hourlyTotal: newHourly,
+          hourlyStartedAt: new Date(now),
           limitReachedAt: null,
           limit: HOURLY_LIMIT,
           windowMinutes: HOURLY_WINDOW_MINUTES,
@@ -211,13 +235,23 @@ async function getStats() {
     const limitCount = current.count || 0;
     const limitActive = retryAfterSeconds > 0 && limitCount >= currentLimit;
 
+    /* hourlyTotal: Wenn das Stundenfenster abgelaufen ist, 0 anzeigen */
+    let reportedHourlyTotal = current.hourlyTotal || limitCount;
+    if (!limitActive && current.hourlyStartedAt) {
+      const startTime = current.hourlyStartedAt.toMillis ? current.hourlyStartedAt.toMillis() : current.hourlyStartedAt;
+      const windowMs = (current.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
+      if (Date.now() - startTime >= windowMs) {
+        reportedHourlyTotal = 0;
+      }
+    }
+
     return {
       current: {
         count: limitCount,
         limit: currentLimit,
         limitActive,
         retryAfterSeconds: limitActive ? retryAfterSeconds : 0,
-        hourlyTotal: current.hourlyTotal || limitCount,
+        hourlyTotal: reportedHourlyTotal,
       },
       totals: {
         today: totals.today || 0,
