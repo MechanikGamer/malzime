@@ -337,8 +337,8 @@ describe("boostLimit", () => {
 });
 
 describe("resetCounter", () => {
-  test("resets limitReachedAt and limit to default, keeps count", async () => {
+  test("resets count and limit to default, keeps hourlyTotal", async () => {
     await resetCounter();
-    expect(mockUpdate).toHaveBeenCalledWith({ limitReachedAt: null, limit: 500 });
+    expect(mockUpdate).toHaveBeenCalledWith({ count: 0, limitReachedAt: null, limit: 500 });
   });
 });

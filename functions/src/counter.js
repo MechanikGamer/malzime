@@ -248,7 +248,7 @@ async function boostLimit(amount = 100) {
 async function resetCounter() {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ limitReachedAt: null, limit: HOURLY_LIMIT });
+  await ref.update({ count: 0, limitReachedAt: null, limit: HOURLY_LIMIT });
 }
 
 module.exports = { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter };
