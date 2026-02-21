@@ -35,7 +35,8 @@ describe("notifyLimitReached", () => {
     expect(body.tags).toEqual(["warning"]);
     expect(body.actions).toHaveLength(3);
     expect(body.actions[0].label).toBe("+100 Analysen");
-    expect(body.actions[0].headers.Authorization).toBe("Bearer secret123");
+    expect(body.actions[0].action).toBe("view");
+    expect(body.actions[0].url).toContain("/api/admin/boost?token=");
     expect(body.actions[1].label).toBe("Reset");
     expect(body.actions[2].label).toBe("Stats");
     expect(body.actions[2].url).toContain("/stats");
@@ -86,9 +87,9 @@ describe("notifyLimitReached", () => {
     });
 
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body.actions[0].url).toBe("https://malzi.me/api/admin/boost");
-    expect(body.actions[0].method).toBe("POST");
-    expect(body.actions[1].url).toBe("https://malzi.me/api/admin/reset");
-    expect(body.actions[1].method).toBe("POST");
+    expect(body.actions[0].url).toContain("/api/admin/boost?token=sec");
+    expect(body.actions[0].action).toBe("view");
+    expect(body.actions[1].url).toContain("/api/admin/reset?token=sec");
+    expect(body.actions[1].action).toBe("view");
   });
 });

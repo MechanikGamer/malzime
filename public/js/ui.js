@@ -140,10 +140,12 @@ export function hideLimitBanner() {
 function startLimitCountdown(totalSeconds) {
   if (countdownInterval) clearInterval(countdownInterval);
   let remaining = totalSeconds;
+  let ticksSinceCheck = 0;
   updateCountdownText(remaining);
 
   countdownInterval = setInterval(() => {
     remaining--;
+    ticksSinceCheck++;
     if (remaining <= 0) {
       clearInterval(countdownInterval);
       countdownInterval = null;
@@ -154,6 +156,19 @@ function startLimitCountdown(totalSeconds) {
       return;
     }
     updateCountdownText(remaining);
+
+    /* Alle 30s prüfen ob Limit per Boost/Reset aufgehoben wurde */
+    if (ticksSinceCheck >= 30) {
+      ticksSinceCheck = 0;
+      fetch("/api/stats")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && !data.current.limitActive) {
+            location.reload();
+          }
+        })
+        .catch(() => {});
+    }
   }, 1000);
 }
 

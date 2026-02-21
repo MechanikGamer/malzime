@@ -2,6 +2,24 @@
 
 const fmt = (n) => new Intl.NumberFormat("de").format(n);
 
+/* Projekt-Start: 5. Februar 2026 */
+const PROJECT_START = new Date("2026-02-05");
+
+function calcAverages(allTime) {
+  const now = new Date();
+  const days = Math.max(1, Math.floor((now - PROJECT_START) / 86400000));
+  const weeks = Math.max(1, Math.ceil(days / 7));
+  const months = Math.max(
+    1,
+    (now.getFullYear() - PROJECT_START.getFullYear()) * 12 + now.getMonth() - PROJECT_START.getMonth() + 1
+  );
+  return {
+    day: Math.round(allTime / days),
+    week: Math.round(allTime / weeks),
+    month: Math.round(allTime / months),
+  };
+}
+
 async function loadStats() {
   const el = {
     liveCount: document.getElementById("liveCount"),
@@ -9,6 +27,9 @@ async function loadStats() {
     todayValue: document.getElementById("todayValue"),
     weekValue: document.getElementById("weekValue"),
     monthValue: document.getElementById("monthValue"),
+    avgDay: document.getElementById("avgDay"),
+    avgWeek: document.getElementById("avgWeek"),
+    avgMonth: document.getElementById("avgMonth"),
     limitBar: document.getElementById("limitBar"),
     limitLabels: document.getElementById("limitLabels"),
     limitFree: document.getElementById("limitFree"),
@@ -28,6 +49,12 @@ async function loadStats() {
     el.todayValue.textContent = fmt(data.totals.today);
     el.weekValue.textContent = fmt(data.totals.week);
     el.monthValue.textContent = fmt(data.totals.month);
+
+    /* Durchschnitte */
+    const avg = calcAverages(data.totals.allTime);
+    el.avgDay.textContent = "\u00d8 " + fmt(avg.day) + " / Tag";
+    el.avgWeek.textContent = "\u00d8 " + fmt(avg.week) + " / Woche";
+    el.avgMonth.textContent = "\u00d8 " + fmt(avg.month) + " / Monat";
 
     /* Limit-Balken */
     const pct = Math.min(100, (data.current.count / data.current.limit) * 100);

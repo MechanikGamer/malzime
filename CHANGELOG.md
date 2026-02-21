@@ -8,11 +8,11 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Features
 
-- **Stundenlimit mit Firestore-Zaehler**: Globaler Analyse-Zaehler in Cloud Firestore mit konfigurierbarem Stundenlimit (Standard: 1000/Stunde). Fail-open bei Firestore-Fehlern — die App bleibt nutzbar, auch wenn die Datenbank kurzzeitig nicht erreichbar ist.
-- **Oeffentliche Stats-Seite**: Neue Seite unter `/stats` mit Live-Status, Gesamtzaehler, Zeitraum-Statistiken (Heute, Woche, Monat) und Limit-Balken. Vollstaendig anonym — keine personenbezogenen Daten.
-- **Limit-Banner auf Hauptseite**: Wenn das Stundenlimit erreicht ist, erscheint ein auffaelliger Banner mit Live-Countdown. Upload- und Demo-Bereich werden ausgegraut. Automatischer Reload nach Ablauf.
-- **Admin-Endpunkte**: `/api/admin/boost` (+100 Analysen) und `/api/admin/reset` (Zaehler zuruecksetzen) mit Bearer-Token-Authentifizierung via ADMIN_SECRET.
-- **ntfy Push-Benachrichtigungen**: Automatischer Push auf self-hosted ntfy wenn das Limit erstmals erreicht wird. Action-Buttons in der Benachrichtigung fuer Boost, Reset und Stats.
+- **Stundenlimit mit Firestore-Zaehler**: Globaler Analyse-Zaehler in Cloud Firestore mit konfigurierbarem Stundenlimit (Standard: 500/Stunde, zentral in `config.js`). Fail-open bei Firestore-Fehlern — die App bleibt nutzbar, auch wenn die Datenbank kurzzeitig nicht erreichbar ist. Erhoeht man das Limit per Admin-Boost, wird es nach Ablauf des Zeitfensters automatisch auf den Default zurueckgesetzt.
+- **Oeffentliche Stats-Seite**: Neue Seite unter `/stats` mit Live-Status, Gesamtzaehler, Zeitraum-Statistiken (Heute, Woche, Monat) mit Durchschnittswerten und Limit-Balken. Vollstaendig anonym — keine personenbezogenen Daten.
+- **Limit-Banner auf Hauptseite**: Wenn das Stundenlimit erreicht ist, erscheint ein auffaelliger Banner mit Live-Countdown und Link zur Stats-Seite. Upload- und Demo-Bereich werden ausgegraut. Automatischer Reload nach Ablauf. Banner erscheint auch beim Neuladen der Seite (nicht erst nach Upload-Versuch).
+- **Admin-Endpunkte**: `/api/admin/boost` (+100 Analysen) und `/api/admin/reset` (Zaehler zuruecksetzen) mit Token-Authentifizierung via ADMIN_SECRET (Bearer-Header oder Query-Parameter). Bestaetigungsseite mit Auto-Redirect zu Stats.
+- **ntfy Push-Benachrichtigungen**: Automatischer Push auf self-hosted ntfy wenn das Limit erstmals erreicht wird. Action-Buttons in der Benachrichtigung fuer Boost, Reset und Stats — oeffnen jeweils eine Bestaetigungsseite im Browser.
 
 ### Datenschutz
 

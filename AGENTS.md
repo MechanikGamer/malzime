@@ -30,7 +30,7 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
 
 functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   index.js           HTTP-Handler: orchestriert Module, Tier-Check, Magic-Byte-Validierung
-  config.js          Konstanten, Modell-Listen (Gemini 2.5 Flash), Limits
+  config.js          Konstanten, Modell-Listen (Gemini 2.5 Flash), Limits, HOURLY_LIMIT (500)
   counter.js         Firestore-Zaehler: Stundenlimit, Totals, Stats, Boost, Reset
   notify.js          ntfy Push-Benachrichtigungen bei Limit-Erreichung
   animal.js          Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
@@ -55,7 +55,7 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (146 tests)
+- `cd functions && npm test` — run Jest backend unit tests (148 tests)
 - `npm run test:frontend` — run Vitest frontend unit tests (84 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend

@@ -134,6 +134,7 @@
   "limit.countdownDone": "Analyse wird wieder freigeschaltet…",
   "limit.supportText": "Mit einer Spende hilfst du, die Limits zu erhöhen und malziME am Laufen zu halten.",
   "limit.supportButton": "Projekt unterstützen",
+  "limit.statsLink": "Aktuelle Auslastung ansehen",
 
   "footer.stats": "Stats"
 }

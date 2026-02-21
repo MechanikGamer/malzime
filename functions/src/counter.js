@@ -1,9 +1,8 @@
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { HOURLY_LIMIT, HOURLY_WINDOW_MINUTES } = require("./config");
 
 const CURRENT_DOC = "stats/current";
 const TOTALS_DOC = "stats/totals";
-const DEFAULT_LIMIT = 1000;
-const DEFAULT_WINDOW_MINUTES = 60;
 
 /**
  * Prüft ob das Limit erreicht ist und erhöht den Zähler.
@@ -19,8 +18,8 @@ async function checkAndIncrement() {
       const snap = await tx.get(ref);
       const data = snap.exists ? snap.data() : {};
 
-      const limit = data.limit || DEFAULT_LIMIT;
-      const windowMs = (data.windowMinutes || DEFAULT_WINDOW_MINUTES) * 60 * 1000;
+      const limit = data.limit || HOURLY_LIMIT;
+      const windowMs = (data.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
       const now = Date.now();
 
       /* Limit war aktiv — prüfen ob das Zeitfenster abgelaufen ist */
@@ -33,29 +32,53 @@ async function checkAndIncrement() {
           return { allowed: false, retryAfterSeconds, count: data.count || 0, limit };
         }
 
-        /* Zeitfenster abgelaufen → Zähler zurücksetzen */
+        /* Zeitfenster abgelaufen → Zähler und Limit zurücksetzen */
+        tx.set(ref, {
+          count: 1,
+          limitReachedAt: null,
+          limit: HOURLY_LIMIT,
+          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+        });
+        return { allowed: true, retryAfterSeconds: 0, count: 1, limit: HOURLY_LIMIT };
+      }
+
+      /* Admin-Reset erkannt: limitReachedAt gelöscht, aber count >= limit
+         → Zähler frisch starten statt sofort wieder zu blockieren */
+      const currentCount = data.count || 0;
+      if (!data.limitReachedAt && currentCount >= limit) {
         tx.set(ref, {
           count: 1,
           limitReachedAt: null,
           limit,
-          windowMinutes: data.windowMinutes || DEFAULT_WINDOW_MINUTES,
+          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
         return { allowed: true, retryAfterSeconds: 0, count: 1, limit };
       }
 
       /* Normaler Betrieb: Zähler erhöhen */
-      const newCount = (data.count || 0) + 1;
+      const newCount = currentCount + 1;
 
-      if (newCount >= limit) {
-        /* Limit gerade erreicht */
+      if (newCount > limit) {
+        /* Über dem Limit (Sicherheitsnetz) */
+        tx.set(ref, {
+          count: newCount,
+          limitReachedAt: data.limitReachedAt || new Date(now),
+          limit,
+          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
+        });
+        const retryAfterSeconds = Math.ceil(windowMs / 1000);
+        return { allowed: false, retryAfterSeconds, count: newCount, limit };
+      }
+
+      if (newCount === limit) {
+        /* Limit gerade erreicht — letzte Analyse erlauben, dann sperren */
         tx.set(ref, {
           count: newCount,
           limitReachedAt: new Date(now),
           limit,
-          windowMinutes: data.windowMinutes || DEFAULT_WINDOW_MINUTES,
+          windowMinutes: data.windowMinutes || HOURLY_WINDOW_MINUTES,
         });
-        const retryAfterSeconds = Math.ceil(windowMs / 1000);
-        return { allowed: false, retryAfterSeconds, count: newCount, limit, justReached: true };
+        return { allowed: true, retryAfterSeconds: 0, count: newCount, limit, justReached: true };
       }
 
       /* Noch unter dem Limit */
@@ -65,8 +88,8 @@ async function checkAndIncrement() {
         tx.set(ref, {
           count: newCount,
           limitReachedAt: null,
-          limit: DEFAULT_LIMIT,
-          windowMinutes: DEFAULT_WINDOW_MINUTES,
+          limit: HOURLY_LIMIT,
+          windowMinutes: HOURLY_WINDOW_MINUTES,
         });
       }
       return { allowed: true, retryAfterSeconds: 0, count: newCount, limit };
@@ -76,7 +99,7 @@ async function checkAndIncrement() {
   } catch (err) {
     /* Fail-open: Lieber ein paar Analysen zu viel als alle User blockieren */
     console.log(JSON.stringify({ warning: "counter-error", error: err.message }));
-    return { allowed: true, retryAfterSeconds: 0, count: -1, limit: DEFAULT_LIMIT, error: err.message };
+    return { allowed: true, retryAfterSeconds: 0, count: -1, limit: HOURLY_LIMIT, error: err.message };
   }
 }
 
@@ -157,23 +180,31 @@ async function getStats() {
 
     const current = currentSnap.exists
       ? currentSnap.data()
-      : { count: 0, limit: DEFAULT_LIMIT, windowMinutes: DEFAULT_WINDOW_MINUTES };
+      : { count: 0, limit: HOURLY_LIMIT, windowMinutes: HOURLY_WINDOW_MINUTES };
     const totals = totalsSnap.exists ? totalsSnap.data() : { today: 0, week: 0, month: 0, year: 0, allTime: 0 };
 
     let retryAfterSeconds = 0;
     if (current.limitReachedAt) {
       const limitTime = current.limitReachedAt.toMillis ? current.limitReachedAt.toMillis() : current.limitReachedAt;
-      const windowMs = (current.windowMinutes || DEFAULT_WINDOW_MINUTES) * 60 * 1000;
+      const windowMs = (current.windowMinutes || HOURLY_WINDOW_MINUTES) * 60 * 1000;
       const remaining = windowMs - (Date.now() - limitTime);
       retryAfterSeconds = remaining > 0 ? Math.ceil(remaining / 1000) : 0;
     }
 
+    const rawCount = current.count || 0;
+    const currentLimit = current.limit || HOURLY_LIMIT;
+    const limitActive = retryAfterSeconds > 0 && rawCount >= currentLimit;
+
+    /* Nach Admin-Reset: count >= limit aber keine Sperre → wird beim nächsten
+       Request automatisch auf 0 zurückgesetzt, also 0 anzeigen */
+    const displayCount = !limitActive && rawCount >= currentLimit ? 0 : rawCount;
+
     return {
       current: {
-        count: current.count || 0,
-        limit: current.limit || DEFAULT_LIMIT,
-        limitActive: retryAfterSeconds > 0,
-        retryAfterSeconds,
+        count: displayCount,
+        limit: currentLimit,
+        limitActive,
+        retryAfterSeconds: limitActive ? retryAfterSeconds : 0,
       },
       totals: {
         today: totals.today || 0,
@@ -195,7 +226,7 @@ async function getStats() {
 async function boostLimit(amount = 100) {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ limit: FieldValue.increment(amount) });
+  await ref.update({ limit: FieldValue.increment(amount), limitReachedAt: null });
 }
 
 /**
@@ -204,7 +235,7 @@ async function boostLimit(amount = 100) {
 async function resetCounter() {
   const db = getFirestore();
   const ref = db.doc(CURRENT_DOC);
-  await ref.update({ count: 0, limitReachedAt: null });
+  await ref.update({ limitReachedAt: null, limit: HOURLY_LIMIT });
 }
 
 module.exports = { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter };

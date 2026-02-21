@@ -8,6 +8,10 @@ const PROFILE_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash-001"];
 
 const API_TIMEOUT_MS = 45000;
 
+/* ── Globales Stundenlimit ── */
+const HOURLY_LIMIT = 500;
+const HOURLY_WINDOW_MINUTES = 60;
+
 /* BUG-003: Globales Budget pro Request — verhindert dass die Summe aller
    internen Timeouts das Cloud-Function-Limit (120s) übersteigt. */
 const REQUEST_BUDGET_MS = 90000;
@@ -21,4 +25,6 @@ module.exports = {
   PROFILE_MODELS,
   API_TIMEOUT_MS,
   REQUEST_BUDGET_MS,
+  HOURLY_LIMIT,
+  HOURLY_WINDOW_MINUTES,
 };

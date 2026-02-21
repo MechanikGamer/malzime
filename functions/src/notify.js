@@ -8,7 +8,7 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
   const baseUrl = "https://malzi.me";
 
   try {
-    await fetch(ntfyUrl, {
+    const res = await fetch(ntfyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({
@@ -19,18 +19,14 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
         tags: ["warning"],
         actions: [
           {
-            action: "http",
+            action: "view",
             label: "+100 Analysen",
-            url: `${baseUrl}/api/admin/boost`,
-            method: "POST",
-            headers: { Authorization: `Bearer ${adminSecret}` },
+            url: `${baseUrl}/api/admin/boost?token=${encodeURIComponent(adminSecret)}`,
           },
           {
-            action: "http",
+            action: "view",
             label: "Reset",
-            url: `${baseUrl}/api/admin/reset`,
-            method: "POST",
-            headers: { Authorization: `Bearer ${adminSecret}` },
+            url: `${baseUrl}/api/admin/reset?token=${encodeURIComponent(adminSecret)}`,
           },
           {
             action: "view",
@@ -40,6 +36,10 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
         ],
       }),
     });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.log(JSON.stringify({ warning: "ntfy-failed", status: res.status, body }));
+    }
   } catch (err) {
     console.log(JSON.stringify({ warning: "ntfy-error", error: err.message }));
   }

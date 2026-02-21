@@ -16,6 +16,11 @@ jest.mock("firebase-admin/firestore", () => ({
   },
 }));
 
+jest.mock("../config", () => ({
+  HOURLY_LIMIT: 500,
+  HOURLY_WINDOW_MINUTES: 60,
+}));
+
 const { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter } = require("../counter");
 
 beforeEach(() => {
@@ -40,7 +45,7 @@ describe("checkAndIncrement", () => {
     expect(result.retryAfterSeconds).toBe(0);
   });
 
-  test("blocks when limit is reached and sets limitReachedAt", async () => {
+  test("allows the last analysis at limit and sets limitReachedAt", async () => {
     mockRunTransaction.mockImplementation(async (fn) => {
       const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
       tx.get.mockResolvedValue({
@@ -51,10 +56,26 @@ describe("checkAndIncrement", () => {
     });
 
     const result = await checkAndIncrement();
+    expect(result.allowed).toBe(true);
+    expect(result.count).toBe(1000);
+    expect(result.justReached).toBe(true);
+  });
+
+  test("blocks when over limit", async () => {
+    const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+    mockRunTransaction.mockImplementation(async (fn) => {
+      const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
+      tx.get.mockResolvedValue({
+        exists: true,
+        data: () => ({ count: 1000, limit: 1000, windowMinutes: 60, limitReachedAt: { toMillis: () => fiveMinAgo } }),
+      });
+      return fn(tx);
+    });
+
+    const result = await checkAndIncrement();
     expect(result.allowed).toBe(false);
     expect(result.count).toBe(1000);
-    expect(result.retryAfterSeconds).toBe(3600);
-    expect(result.justReached).toBe(true);
+    expect(result.retryAfterSeconds).toBeGreaterThan(3200);
   });
 
   test("blocks when limitReachedAt is within window", async () => {
@@ -81,6 +102,21 @@ describe("checkAndIncrement", () => {
       tx.get.mockResolvedValue({
         exists: true,
         data: () => ({ count: 1000, limit: 1000, windowMinutes: 60, limitReachedAt: { toMillis: () => twoHoursAgo } }),
+      });
+      return fn(tx);
+    });
+
+    const result = await checkAndIncrement();
+    expect(result.allowed).toBe(true);
+    expect(result.count).toBe(1);
+  });
+
+  test("allows after admin reset when count >= limit but limitReachedAt cleared", async () => {
+    mockRunTransaction.mockImplementation(async (fn) => {
+      const tx = { get: jest.fn(), set: jest.fn(), update: jest.fn() };
+      tx.get.mockResolvedValue({
+        exists: true,
+        data: () => ({ count: 500, limit: 500, windowMinutes: 60, limitReachedAt: null }),
       });
       return fn(tx);
     });
@@ -119,7 +155,7 @@ describe("checkAndIncrement", () => {
 
     const result = await checkAndIncrement();
     expect(result.allowed).toBe(true);
-    expect(result.limit).toBe(1000);
+    expect(result.limit).toBe(500);
   });
 });
 
@@ -249,26 +285,26 @@ describe("getStats", () => {
 
     const result = await getStats();
     expect(result.current.count).toBe(0);
-    expect(result.current.limit).toBe(1000);
+    expect(result.current.limit).toBe(500);
     expect(result.totals.allTime).toBe(0);
   });
 });
 
 describe("boostLimit", () => {
-  test("increments limit by specified amount", async () => {
+  test("increments limit by specified amount and clears limitReachedAt", async () => {
     await boostLimit(200);
-    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 200 } });
+    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 200 }, limitReachedAt: null });
   });
 
   test("defaults to 100 when no amount given", async () => {
     await boostLimit();
-    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 100 } });
+    expect(mockUpdate).toHaveBeenCalledWith({ limit: { __increment: 100 }, limitReachedAt: null });
   });
 });
 
 describe("resetCounter", () => {
-  test("resets count and limitReachedAt", async () => {
+  test("resets limitReachedAt and limit to default, keeps count", async () => {
     await resetCounter();
-    expect(mockUpdate).toHaveBeenCalledWith({ count: 0, limitReachedAt: null });
+    expect(mockUpdate).toHaveBeenCalledWith({ limitReachedAt: null, limit: 500 });
   });
 });
