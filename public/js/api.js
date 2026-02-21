@@ -154,6 +154,7 @@ export async function analyzeImage() {
       state.lastData = data;
       renderCurrentMode(data);
       setStatus("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   } catch (err) {
     /* BUG-002: Stale catch darf UI des neuen Laufs nicht überschreiben */
