@@ -52,6 +52,7 @@ async function loadDemoImage(url, name) {
     state.lastFile = file;
     state.lastPrepared = null;
     state.lastData = null;
+    window.scrollTo({ top: 0, behavior: "smooth" });
     analyzeImage();
   } catch (_err) {
     /* Fetch fehlgeschlagen — stille Behandlung */
