@@ -53,6 +53,16 @@ describe("demo-data", () => {
     });
   }
 
+  test("exif contains only make and model (no GPS, no dateTimeOriginal)", () => {
+    for (const [_id, data] of Object.entries(demoData)) {
+      expect(data.exif).not.toHaveProperty("gpsLatitude");
+      expect(data.exif).not.toHaveProperty("gpsLongitude");
+      expect(data.exif).not.toHaveProperty("dateTimeOriginal");
+      expect(data.exif).toHaveProperty("make");
+      expect(data.exif).toHaveProperty("model");
+    }
+  });
+
   for (const id of ["demo-1", "demo-2"]) {
     describe(id, () => {
       const data = demoData[id] || {};

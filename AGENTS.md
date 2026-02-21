@@ -40,6 +40,7 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   vision.js          Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
   privacy.js         Privacy-Risiko-Erkennung aus OCR/Labels
   gemini.js          Vertex AI Gemini: Bildbeschreibung (multimodal) + Profilgenerierung (text)
+  auth.js            HMAC-basierte Admin-Token (createAdminToken, verifyAdminToken)
   i18n.js            Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
   locales/           Backend-Locale-Dateien
     manifest.json    Verfuegbare Sprachen + Default
@@ -55,8 +56,8 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (155 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (84 tests)
+- `cd functions && npm test` — run Jest backend unit tests (186 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (125 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend

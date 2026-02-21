@@ -14,6 +14,7 @@ const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
 const { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter } = require("./counter");
 const { notifyLimitReached } = require("./notify");
+const { verifyAdminToken } = require("./auth");
 
 const adminSecret = defineSecret("ADMIN_SECRET");
 const ntfyUrl = defineSecret("NTFY_URL");
@@ -408,9 +409,15 @@ exports.stats = onRequest(
 
 /* ── Admin-Endpunkte (nur mit ADMIN_SECRET) ── */
 
+function escapeHtml(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function adminConfirmPage(title, message) {
+  const safeTitle = escapeHtml(title);
+  const safeMessage = escapeHtml(message);
   return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — malziME</title><meta http-equiv="refresh" content="3;url=/stats">
+<title>${safeTitle} — malziME</title><meta http-equiv="refresh" content="3;url=/stats">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0}
 body{font-family:'Inter',system-ui,sans-serif;background:#0a0c10;color:#c8cdd8;
@@ -435,8 +442,8 @@ body::before{content:'';position:fixed;inset:0;
 <body>
 <div class="card">
   <div class="icon">&#10003;</div>
-  <div class="title">${title}</div>
-  <p class="msg">${message}</p>
+  <div class="title">${safeTitle}</div>
+  <p class="msg">${safeMessage}</p>
   <a href="/stats" class="link">Stats ansehen &rarr;</a>
   <p class="redirect">Automatische Weiterleitung in 3 Sekunden&hellip;</p>
 </div>
@@ -447,38 +454,45 @@ exports.admin = onRequest(
   {
     region: "europe-west1",
     memory: "256MiB",
-    cors: true,
+    cors: ["https://malzi.me", "https://www.malzi.me", "https://malzime.web.app", "https://malzime.firebaseapp.com"],
     invoker: "public",
     maxInstances: 2,
     secrets: [adminSecret],
   },
   async (req, res) => {
-    /* Auth: Bearer-Header ODER ?token= Query-Parameter */
+    const path = req.path || "";
+    const action = path.includes("boost") ? "boost" : path.includes("reset") ? "reset" : "";
+
+    /* Auth: Bearer-Header (POST) ODER HMAC-Token (GET, fuer ntfy-Links) */
     const auth = req.headers["authorization"] || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : req.query.token || "";
-    if (!token || token !== adminSecret.value()) {
+    const bearerToken = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    const hmacToken = req.query.hmac || "";
+
+    const isBearerAuth = bearerToken && bearerToken === adminSecret.value();
+    const isHmacAuth = hmacToken && action && verifyAdminToken(hmacToken, action, adminSecret.value());
+
+    if (!isBearerAuth && !isHmacAuth) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }
 
-    const path = req.path || "";
     try {
       if (path === "/boost" || path === "/api/admin/boost") {
         const amount = (req.body && req.body.amount) || req.query.amount || 100;
-        await boostLimit(Math.min(Math.max(Number(amount) || 100, 1), 10000));
+        await boostLimit(Math.min(Math.max(Number(amount) || 100, 1), 500));
         const data = await getStats();
-        if (req.query.token) {
+        if (isHmacAuth) {
           res
             .type("html")
-            .send(adminConfirmPage("Boost", `+100 Analysen hinzugef&uuml;gt. Neues Limit: ${data.current.limit}`));
+            .send(adminConfirmPage("Boost", `+100 Analysen hinzugefuegt. Neues Limit: ${data.current.limit}`));
         } else {
           res.json({ ok: true, action: "boost", stats: data });
         }
       } else if (path === "/reset" || path === "/api/admin/reset") {
         await resetCounter();
         const data = await getStats();
-        if (req.query.token) {
-          res.type("html").send(adminConfirmPage("Reset", "Stundenz&auml;hler zur&uuml;ckgesetzt."));
+        if (isHmacAuth) {
+          res.type("html").send(adminConfirmPage("Reset", "Stundenzaehler zurueckgesetzt."));
         } else {
           res.json({ ok: true, action: "reset", stats: data });
         }

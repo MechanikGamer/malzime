@@ -1,3 +1,5 @@
+const { createAdminToken } = require("./auth");
+
 /**
  * Sendet eine Push-Benachrichtigung über ntfy wenn das Stundenlimit erreicht wird.
  * Nur 1× pro Limit-Fenster (bei justReached), nicht bei jeder blockierten Anfrage.
@@ -8,6 +10,9 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
   const baseUrl = "https://malzi.me";
 
   try {
+    const boostToken = createAdminToken("boost", adminSecret);
+    const resetToken = createAdminToken("reset", adminSecret);
+
     const res = await fetch(ntfyUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
@@ -21,12 +26,12 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
           {
             action: "view",
             label: "+100 Analysen",
-            url: `${baseUrl}/api/admin/boost?token=${encodeURIComponent(adminSecret)}`,
+            url: `${baseUrl}/api/admin/boost?hmac=${encodeURIComponent(boostToken)}`,
           },
           {
             action: "view",
             label: "Reset",
-            url: `${baseUrl}/api/admin/reset?token=${encodeURIComponent(adminSecret)}`,
+            url: `${baseUrl}/api/admin/reset?hmac=${encodeURIComponent(resetToken)}`,
           },
           {
             action: "view",

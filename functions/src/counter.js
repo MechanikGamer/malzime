@@ -179,10 +179,18 @@ async function getStats() {
     const windowMs = wm * 60 * 1000;
     const now = Date.now();
 
+    const rawLength = (current.recentAnalyses || []).length;
     const recent = filterRecent(current.recentAnalyses, now, windowMs);
     const recentCount = recent.length;
     const limitActive = recentCount >= currentLimit;
     const retryAfterSeconds = limitActive ? calcRetrySeconds(recent, currentLimit, now, windowMs) : 0;
+
+    /* Cleanup: alte Eintraege in Firestore bereinigen (fire-and-forget) */
+    if (rawLength - recentCount >= 10) {
+      db.doc(CURRENT_DOC)
+        .update({ recentAnalyses: recent })
+        .catch(() => {});
+    }
 
     return {
       current: {

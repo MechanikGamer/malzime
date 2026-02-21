@@ -3,7 +3,7 @@ const demoData = {
     labels: ["Fahrrad", "Wald", "Rucksack", "Zelt", "Berge", "Pfad"],
     landmarks: ["Alpen"],
     ocrText: "",
-    exif: { make: "Beispiel", model: "DemoCam", dateTimeOriginal: "2024:07:12 09:42:10" },
+    exif: { make: "Beispiel", model: "DemoCam" },
     normalProfile: {
       categories: {
         alter_geschlecht: {
@@ -201,7 +201,7 @@ const demoData = {
     labels: ["Straße", "Auto", "Kennzeichen", "Schule", "Kind", "Rucksack"],
     landmarks: [],
     ocrText: "Musterstraße 12",
-    exif: { make: "Beispiel", model: "DemoCam", gpsLatitude: 52.52, gpsLongitude: 13.405 },
+    exif: { make: "Beispiel", model: "DemoCam" },
     normalProfile: {
       categories: {
         alter_geschlecht: {

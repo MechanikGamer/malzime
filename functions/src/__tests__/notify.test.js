@@ -1,4 +1,4 @@
-/* Tests for notify.js — ntfy push notification */
+/* Tests for notify.js — ntfy push notification with HMAC tokens */
 
 const { notifyLimitReached } = require("../notify");
 
@@ -36,10 +36,44 @@ describe("notifyLimitReached", () => {
     expect(body.actions).toHaveLength(3);
     expect(body.actions[0].label).toBe("+100 Analysen");
     expect(body.actions[0].action).toBe("view");
-    expect(body.actions[0].url).toContain("/api/admin/boost?token=");
     expect(body.actions[1].label).toBe("Reset");
     expect(body.actions[2].label).toBe("Stats");
     expect(body.actions[2].url).toContain("/stats");
+  });
+
+  test("uses HMAC tokens instead of static secret in URLs", async () => {
+    await notifyLimitReached({
+      ntfyUrl: "https://ntfy.example.com",
+      ntfyTopic: "topic",
+      adminSecret: "my-secret",
+      count: 500,
+      limit: 500,
+    });
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    /* URLs enthalten ?hmac= statt ?token= */
+    expect(body.actions[0].url).toContain("/api/admin/boost?hmac=");
+    expect(body.actions[0].url).not.toContain("?token=");
+    expect(body.actions[1].url).toContain("/api/admin/reset?hmac=");
+    expect(body.actions[1].url).not.toContain("?token=");
+    /* Static secret darf NICHT in der URL stehen */
+    expect(body.actions[0].url).not.toContain("my-secret");
+    expect(body.actions[1].url).not.toContain("my-secret");
+  });
+
+  test("HMAC token has correct format (expires.signature)", async () => {
+    await notifyLimitReached({
+      ntfyUrl: "https://ntfy.example.com",
+      ntfyTopic: "topic",
+      adminSecret: "sec",
+      count: 500,
+      limit: 500,
+    });
+
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    const boostUrl = new URL(body.actions[0].url);
+    const hmacParam = boostUrl.searchParams.get("hmac");
+    expect(hmacParam).toMatch(/^\d+\.[a-f0-9]{64}$/);
   });
 
   test("does nothing when ntfyUrl is empty", async () => {
@@ -75,21 +109,5 @@ describe("notifyLimitReached", () => {
         limit: 1000,
       })
     ).resolves.toBeUndefined();
-  });
-
-  test("includes boost and reset action URLs", async () => {
-    await notifyLimitReached({
-      ntfyUrl: "https://ntfy.example.com",
-      ntfyTopic: "topic",
-      adminSecret: "sec",
-      count: 500,
-      limit: 500,
-    });
-
-    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body.actions[0].url).toContain("/api/admin/boost?token=sec");
-    expect(body.actions[0].action).toBe("view");
-    expect(body.actions[1].url).toContain("/api/admin/reset?token=sec");
-    expect(body.actions[1].action).toBe("view");
   });
 });

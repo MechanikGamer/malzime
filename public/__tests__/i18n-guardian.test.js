@@ -108,20 +108,23 @@ describe("i18n Guardian", () => {
 
   /* ── 3. Key Completeness ── */
   describe("Key Completeness", () => {
-    it("every data-i18n attribute in HTML has a key in default locale", () => {
+    it("every data-i18n attribute in all HTML files has a key in default locale", () => {
       const m = readManifest();
       const localeKeys = Object.keys(readLocale(m.default));
-      const html = fs.readFileSync(path.join(PUBLIC_DIR, "index.html"), "utf8");
+      const htmlFiles = fs.readdirSync(PUBLIC_DIR).filter((f) => f.endsWith(".html"));
 
       const attrs = ["data-i18n", "data-i18n-alt", "data-i18n-title", "data-i18n-placeholder", "data-i18n-html"];
       const missing = [];
 
-      for (const attr of attrs) {
-        const regex = new RegExp(`${attr}="([^"]+)"`, "g");
-        let match;
-        while ((match = regex.exec(html))) {
-          if (!localeKeys.includes(match[1])) {
-            missing.push(`${attr}="${match[1]}"`);
+      for (const file of htmlFiles) {
+        const html = fs.readFileSync(path.join(PUBLIC_DIR, file), "utf8");
+        for (const attr of attrs) {
+          const regex = new RegExp(`${attr}="([^"]+)"`, "g");
+          let match;
+          while ((match = regex.exec(html))) {
+            if (!localeKeys.includes(match[1])) {
+              missing.push(`${file}: ${attr}="${match[1]}"`);
+            }
           }
         }
       }
@@ -157,7 +160,7 @@ describe("i18n Guardian", () => {
      * As phases complete, files get REMOVED from this list.
      * The guardian then ensures they stay clean forever.
      */
-    const ALLOWLIST = ["js/stats.js"];
+    const ALLOWLIST = [];
 
     it("non-allowlisted JS files have no hardcoded German", () => {
       const violations = [];

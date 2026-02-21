@@ -4,6 +4,32 @@ Alle relevanten Aenderungen an malziME werden hier dokumentiert.
 
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.2.1] — 2026-02-21
+
+### Sicherheit
+
+- **HMAC-basierte Admin-Tokens**: ntfy-Action-URLs enthalten keine Klartext-Secrets mehr — stattdessen kurzlebige HMAC-SHA256-signierte Tokens (30 Min gueltig, aktionsgebunden, timing-safe)
+- **Admin CORS-Whitelist**: Admin-Endpunkte verwenden jetzt dieselbe Domain-Whitelist wie der Analyse-Endpunkt (statt `cors: true`)
+- **Boost-Cap**: Maximaler Boost auf 500 begrenzt (statt 10.000)
+- **HTML-Escaping**: Admin-Bestaetigungsseite escaped jetzt alle dynamischen Werte
+- **ADMIN_SECRET rotiert**: Neues Zufalls-Secret gesetzt
+
+### Bugfixes
+
+- **Counter-Cleanup**: `getStats()` schreibt veraltete `recentAnalyses`-Eintraege zurueck nach Firestore (verhindert unbegrenztes Wachstum)
+- **Demo-Daten Privacy**: GPS-Koordinaten und `dateTimeOriginal` aus Server-seitigen Demo-Exif-Daten entfernt — widerspricht sonst der Privacy-Architektur
+- **stats.js i18n**: Alle hardcoded deutschen Strings durch `t()`-Aufrufe ersetzt, `Intl.NumberFormat` verwendet erkannte Sprache statt `"de"`
+
+### Verbesserungen
+
+- **i18n-Guardian erweitert**: Prueft jetzt automatisch alle HTML-Dateien auf fehlende Locale-Keys (nicht nur index.html)
+- **stats.html i18n**: Alle statischen Texte mit `data-i18n`-Attributen versehen
+
+### Tests
+
+- **77 neue Tests**: HMAC-Auth (10), Admin-Endpunkte (14), Stats-Frontend (41), Demo-Privacy (1), Rate-Limit-Boundary (1), Notify HMAC (6), npm audit fix
+- **Testabdeckung**: 186 Backend + 125 Frontend Tests
+
 ## [1.2.0] — 2026-02-21
 
 ### Features

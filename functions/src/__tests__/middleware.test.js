@@ -28,4 +28,12 @@ describe("checkRateLimit", () => {
       expect(checkRateLimit(key)).toBe(true);
     }
   });
+
+  test("blocks request at rate limit boundary (201st request)", () => {
+    const key = "boundary-test-" + Date.now();
+    for (let i = 0; i < 200; i++) {
+      expect(checkRateLimit(key)).toBe(true);
+    }
+    expect(checkRateLimit(key)).toBe(false);
+  });
 });

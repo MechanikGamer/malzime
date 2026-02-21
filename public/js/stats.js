@@ -1,9 +1,13 @@
 /* ── Stats-Seite: Lädt /api/stats und befüllt die Anzeige ── */
 
-const fmt = (n) => new Intl.NumberFormat("de").format(n);
+import { initI18n, t, getLanguage, applyTranslations } from "./i18n.js";
 
 /* Projekt-Start: 5. Februar 2026 */
 const PROJECT_START = new Date("2026-02-05");
+
+function fmt(n) {
+  return new Intl.NumberFormat(getLanguage()).format(n);
+}
 
 function calcAverages(allTime) {
   const now = new Date();
@@ -52,9 +56,9 @@ async function loadStats() {
 
     /* Durchschnitte */
     const avg = calcAverages(data.totals.allTime);
-    el.avgDay.textContent = "\u00d8 " + fmt(avg.day) + " / Tag";
-    el.avgWeek.textContent = "\u00d8 " + fmt(avg.week) + " / Woche";
-    el.avgMonth.textContent = "\u00d8 " + fmt(avg.month) + " / Monat";
+    el.avgDay.textContent = t("stats.avgDay", { value: fmt(avg.day) });
+    el.avgWeek.textContent = t("stats.avgWeek", { value: fmt(avg.week) });
+    el.avgMonth.textContent = t("stats.avgMonth", { value: fmt(avg.month) });
 
     /* Limit-Balken */
     const pct = Math.min(100, (data.current.count / data.current.limit) * 100);
@@ -65,17 +69,17 @@ async function loadStats() {
     el.limitBar.className = "stats-limit__bar-fill " + colorClass;
 
     el.limitLabels.textContent = fmt(data.current.count) + " / " + fmt(data.current.limit);
-    el.limitFree.textContent = (100 - pct).toFixed(1) + " % frei";
+    el.limitFree.textContent = t("stats.percentFree", { value: (100 - pct).toFixed(1) });
 
     /* Limit-Status */
     if (data.current.limitActive) {
-      el.limitBadge.textContent = "Limit erreicht";
+      el.limitBadge.textContent = t("stats.limitReached");
       el.limitBadge.className = "stats-limit__badge stats-limit__badge--warn";
       if (data.current.retryAfterSeconds > 0) {
         startCountdown(data.current.retryAfterSeconds, el.limitCountdown);
       }
     } else {
-      el.limitBadge.textContent = "Verf\u00fcgbar";
+      el.limitBadge.textContent = t("stats.available");
       el.limitBadge.className = "stats-limit__badge stats-limit__badge--ok";
     }
   } catch (_err) {
@@ -93,8 +97,8 @@ function startCountdown(seconds, el) {
     const s = remaining % 60;
     el.textContent =
       m > 0
-        ? "Wieder verf\u00fcgbar in " + m + ":" + String(s).padStart(2, "0") + " Min"
-        : "Wieder verf\u00fcgbar in " + s + " Sekunden";
+        ? t("stats.countdownMinutes", { time: m + ":" + String(s).padStart(2, "0") })
+        : t("stats.countdownSeconds", { seconds: s });
   }
 
   update();
@@ -102,7 +106,7 @@ function startCountdown(seconds, el) {
     remaining--;
     if (remaining <= 0) {
       clearInterval(iv);
-      el.textContent = "Analyse wird wieder freigeschaltet\u2026";
+      el.textContent = t("stats.countdownDone");
       setTimeout(() => location.reload(), 2000);
       return;
     }
@@ -110,4 +114,10 @@ function startCountdown(seconds, el) {
   }, 1000);
 }
 
-loadStats();
+async function init() {
+  await initI18n();
+  applyTranslations();
+  await loadStats();
+}
+
+init();

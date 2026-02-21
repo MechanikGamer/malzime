@@ -89,8 +89,8 @@ cd functions && npm test
 npm run test:frontend
 ```
 
-**Backend (155 Tests):** HTTP-Handler, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian, Firestore-Counter, ntfy-Benachrichtigungen.
-**Frontend (84 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian.
+**Backend (186 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Tier-Erkennung, Config, Demo-Daten, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, i18n-Guardian, Firestore-Counter, ntfy-Benachrichtigungen.
+**Frontend (125 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, i18n-Modul, i18n-Guardian, Stats-Seite.
 
 ## 7. Linting + Formatting
 
