@@ -34,7 +34,6 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   counter.js         Firestore-Zaehler: Stundenlimit, Totals, Stats, Boost, Reset
   notify.js          ntfy Push-Benachrichtigungen bei Limit-Erreichung
   animal.js          Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
-  demo-data.js       Vorgeschriebene Demo-Profile (normal + boost)
   middleware.js       Rate Limiting (IP-basiert, 200/10min), IP-Extraktion
   upload.js          Multipart + JSON Body Parsing
   vision.js          Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
@@ -56,7 +55,7 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (210 tests)
+- `cd functions && npm test` — run Jest backend unit tests (187 tests)
 - `npm run test:frontend` — run Vitest frontend unit tests (126 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
@@ -86,7 +85,7 @@ docs/                Setup-Dokumentation
 - Vitest + jsdom for frontend unit tests in `public/__tests__/`
 - Run backend: `cd functions && npm test`
 - Run frontend: `npm run test:frontend`
-- Backend: test pure functions (privacy, config, middleware, upload, demo-data)
+- Backend: test pure functions (privacy, config, middleware, upload)
 - Frontend: test DOM helpers, state, UI components, geocoding, render, API integration
 - API-dependent modules (vision, gemini) tested via integration/manual
 

@@ -4,7 +4,6 @@ const { initializeApp } = require("firebase-admin/app");
 const { defineSecret } = require("firebase-functions/params");
 
 const { ALLOWED_MIME, MAX_UPLOAD_BYTES, REQUEST_BUDGET_MS } = require("./config");
-const { demoData } = require("./demo-data");
 const { getClientIp, checkRateLimit } = require("./middleware");
 const { parseMultipart, parseJsonBody } = require("./upload");
 const { analyzeWithVision } = require("./vision");
@@ -68,13 +67,11 @@ exports.analyze = onRequest(
         console.log(JSON.stringify({ requestId, warning: "no-browser-origin" }));
       }
 
-      let demoImageId = "";
       let file = null;
       let multipartFields = null;
 
       const jsonBody = parseJsonBody(req);
       if (jsonBody) {
-        demoImageId = jsonBody.demoImageId || "";
         if (jsonBody.imageBase64) {
           const b64Str = String(jsonBody.imageBase64);
           /* BUG-010: Offensichtlich ungültiges Base64 früh abweisen — spart teure API-Calls */
@@ -108,7 +105,6 @@ exports.analyze = onRequest(
         const parsed = await parseMultipart(req);
         file = parsed.file;
         multipartFields = parsed.fields;
-        demoImageId = multipartFields.demoImageId || "";
       }
 
       /* i18n: Sprache aus Request auflösen */
@@ -119,36 +115,6 @@ exports.analyze = onRequest(
       const hpValue = (jsonBody && jsonBody.website) || (multipartFields && multipartFields.website) || "";
       if (hpValue) {
         res.status(403).json({ error: "Forbidden" });
-        return;
-      }
-
-      /* ── Demo-Pfad ── */
-      if (demoImageId && demoData[demoImageId]) {
-        const demo = demoData[demoImageId];
-        const exif = demo.exif || {};
-        const privacyRisks = buildPrivacyRisks({ ocrText: demo.ocrText || "", exif, labels: demo.labels || [] });
-        const np = demo.normalProfile;
-        const bp = demo.boostProfile || np;
-
-        res.json({
-          profiles: {
-            normal: {
-              categories: np.categories,
-              ad_targeting: np.ad_targeting,
-              manipulation_triggers: np.manipulation_triggers,
-              profileText: np.profileText,
-            },
-            boost: {
-              categories: bp.categories,
-              ad_targeting: bp.ad_targeting,
-              manipulation_triggers: bp.manipulation_triggers,
-              profileText: bp.profileText,
-            },
-          },
-          privacyRisks,
-          exif,
-          meta: { requestId, mode: "demo", demoId: demoImageId },
-        });
         return;
       }
 

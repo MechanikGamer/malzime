@@ -140,62 +140,6 @@ describe("analyze handler", () => {
     expect(res.body.error).toBe("Forbidden");
   });
 
-  /* ── Demo Path ── */
-  test("returns demo data for known demoImageId", async () => {
-    mockParseJsonBody.mockReturnValue({ demoImageId: "demo-1" });
-    const req = mockReq();
-    const res = mockRes();
-    await analyze(req, res);
-
-    expect(res.body.meta.mode).toBe("demo");
-    expect(res.body.meta.demoId).toBe("demo-1");
-    expect(res.body.profiles).toBeDefined();
-    expect(res.body.profiles.normal).toBeDefined();
-    expect(res.body.profiles.boost).toBeDefined();
-    expect(res.body.profiles.normal.categories).toBeDefined();
-    expect(res.body.profiles.normal.ad_targeting).toBeDefined();
-    expect(res.body.profiles.normal.manipulation_triggers).toBeDefined();
-    expect(res.body.profiles.normal.profileText).toBeDefined();
-  });
-
-  test("does not use demo path for unknown demoImageId", async () => {
-    mockParseJsonBody.mockReturnValue({
-      demoImageId: "nonexistent-demo",
-      imageBase64: VALID_JPEG_B64,
-      mimeType: "image/jpeg",
-    });
-
-    mockAnalyzeWithVision.mockResolvedValue({
-      labels: ["Person", "Smile"],
-      landmarks: [],
-      ocrText: "",
-      ocrTextRaw: "",
-      faces: [],
-      objects: [],
-    });
-    mockDescribeImage.mockResolvedValue("A person smiling");
-    mockGenerateBothProfiles.mockResolvedValue({
-      normal: {
-        categories: { alter: { label: "Alter", value: "test", confidence: 0.5 } },
-        ad_targeting: [],
-        manipulation_triggers: [],
-        profileText: "test",
-      },
-      boost: {
-        categories: { alter: { label: "Alter", value: "test", confidence: 0.5 } },
-        ad_targeting: [],
-        manipulation_triggers: [],
-        profileText: "test",
-      },
-    });
-
-    const req = mockReq();
-    const res = mockRes();
-    await analyze(req, res);
-
-    expect(res.body.meta.mode).toBe("multimodal");
-  });
-
   /* ── Validation ── */
   test("returns 400 when no image provided", async () => {
     mockParseJsonBody.mockReturnValue({});
@@ -941,15 +885,6 @@ describe("analyze handler", () => {
     const res = mockRes();
     await analyze(req, res);
     expect(res.status).toHaveBeenCalledWith(403);
-    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
-  });
-
-  test("demo request does NOT call checkAndIncrement (BUG-001)", async () => {
-    mockParseJsonBody.mockReturnValue({ demoImageId: "demo-1" });
-    const req = mockReq();
-    const res = mockRes();
-    await analyze(req, res);
-    expect(res.body.meta.mode).toBe("demo");
     expect(mockCheckAndIncrement).not.toHaveBeenCalled();
   });
 

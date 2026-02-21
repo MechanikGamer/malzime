@@ -55,7 +55,6 @@ functions/src/              Firebase Cloud Functions (2nd Gen, Node 24, europe-w
   index.js                  HTTP-Handler (analyze-Endpunkt, Tier-Check, Magic-Byte-Validierung)
   config.js                 Konstanten, Modell-Listen, Limits
   animal.js                 Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
-  demo-data.js              Vorgeschriebene Demo-Profile (normal + boost)
   middleware.js              Rate Limiting (IP-basiert, 200/10min), IP-Extraktion
   upload.js                 Multipart- und JSON-Body-Parsing
   vision.js                 Google Cloud Vision API (EU-Endpoint, TEXT + LABEL_DETECTION)
@@ -115,7 +114,6 @@ Detaillierte Anleitung: [`docs/SETUP.md`](docs/SETUP.md) | Eigene Instanz aufset
   "filename": "upload.jpg",
   "exif": { "make": "Apple", "model": "iPhone 15 Pro" },
   "lang": "de",
-  "demoImageId": "demo-1"
 }
 ```
 
@@ -125,7 +123,6 @@ Detaillierte Anleitung: [`docs/SETUP.md`](docs/SETUP.md) | Eigene Instanz aufset
 | `mimeType` | string | `image/jpeg`, `image/png`, `image/webp`, `image/gif` |
 | `exif` | object | Kamera-Metadaten vom Client (ohne GPS!) |
 | `lang` | string | Sprachcode (`de`, `en`, ...). Default: `de` |
-| `demoImageId` | string | `demo-1` oder `demo-2` fuer vorgeschriebene Profile |
 
 ### Response
 
