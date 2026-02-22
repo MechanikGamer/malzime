@@ -24,8 +24,11 @@ malziME is a **workshop tool for media literacy education**. It is designed for 
 | Risk | Mitigation | Status |
 |------|-----------|--------|
 | In-memory rate limit (per instance, not global) | `maxInstances` cap + per-IP rate limit | Accepted for workshop scale |
-| Public endpoint (`invoker: "public"`) | Rate limiting + CORS + honeypot + timing check | Under review for hardening options |
+| Public endpoint (`invoker: "public"`) | Rate limiting + CORS + honeypot + timing check | Accepted for workshop scale |
 | No authentication required | By design — workshop participants should not need accounts | Accepted |
+| Counter fail-open on Firestore errors (`counter.js`) | App stays available during DB outages; worst case: a few extra analyses beyond hourly limit | Accepted — availability over strict cost control |
+| Nonce replay protection fail-open on Firestore errors (`auth.js`) | Admin actions remain functional during DB outages; nonces are short-lived (5 min TTL) and require valid HMAC | Accepted — admin availability over strict replay prevention |
+| `minimatch` ReDoS in `@google-cloud/vision` transitive dependency (`vision → google-gax → rimraf → glob → minimatch <10.2.1`) | Not exploitable in this context (no user-controlled glob patterns reach minimatch). Vision API 5.3.4 is latest; fix requires upstream update by Google | Accepted — monitored via Dependabot |
 
 ## Security Measures
 
