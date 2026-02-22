@@ -3,6 +3,7 @@ const { RATE_LIMIT, RATE_WINDOW_MS } = require("./config");
 const rateState = new Map();
 let lastCleanup = Date.now();
 const CLEANUP_INTERVAL_MS = 60 * 1000;
+const MAX_RATE_ENTRIES = 10000;
 
 function getClientIp(req) {
   /* SEC-001: req.ip wird von Express/Firebase korrekt aus dem Load-Balancer-Header
@@ -25,6 +26,11 @@ function checkRateLimit(key) {
   const current = Date.now();
   const entry = rateState.get(key);
   if (!entry || current > entry.resetAt) {
+    /* LRU-Cap: Wenn Map voll, ältesten Eintrag entfernen */
+    if (rateState.size >= MAX_RATE_ENTRIES && !rateState.has(key)) {
+      const oldest = rateState.keys().next().value;
+      rateState.delete(oldest);
+    }
     rateState.set(key, { count: 1, resetAt: current + RATE_WINDOW_MS });
     return true;
   }

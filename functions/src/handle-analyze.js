@@ -8,6 +8,7 @@ const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
 const { checkAndIncrement, incrementTotals, getMaintenanceStatus } = require("./counter");
 const { notifyLimitReached } = require("./notify");
+const { ALLOWED_ORIGINS } = require("./domains");
 
 async function handleAnalyze(req, res, secrets) {
   const requestId = Math.random().toString(36).slice(2, 10);
@@ -37,13 +38,7 @@ async function handleAnalyze(req, res, secrets) {
        Nicht blockieren (Rate Limit ist die primäre Defense), nur observieren. */
     const origin = req.headers["origin"] || "";
     const referer = req.headers["referer"] || "";
-    const allowedOrigins = [
-      "https://malzi.me",
-      "https://www.malzi.me",
-      "https://malzime.web.app",
-      "https://malzime.firebaseapp.com",
-    ];
-    const hasValidOrigin = allowedOrigins.some((o) => origin.startsWith(o) || referer.startsWith(o));
+    const hasValidOrigin = ALLOWED_ORIGINS.some((o) => origin.startsWith(o) || referer.startsWith(o));
     if (!hasValidOrigin) {
       console.log(JSON.stringify({ requestId, warning: "no-browser-origin" }));
     }

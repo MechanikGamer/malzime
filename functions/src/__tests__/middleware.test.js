@@ -36,4 +36,11 @@ describe("checkRateLimit", () => {
     }
     expect(checkRateLimit(key)).toBe(false);
   });
+
+  test("does not crash with many unique IPs (LRU-Cap)", () => {
+    const prefix = "lru-" + Date.now() + "-";
+    for (let i = 0; i < 100; i++) {
+      expect(checkRateLimit(prefix + i)).toBe(true);
+    }
+  });
 });

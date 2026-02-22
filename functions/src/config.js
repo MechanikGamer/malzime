@@ -16,6 +16,11 @@ const HOURLY_WINDOW_MINUTES = 60;
    internen Timeouts das Cloud-Function-Limit (120s) übersteigt. */
 const REQUEST_BUDGET_MS = 90000;
 
+/* Laufzeit-Validierung — fehlerhafte Config crasht sofort statt leise falsch zu laufen */
+if (HOURLY_LIMIT < 1) throw new Error("Config: HOURLY_LIMIT must be >= 1");
+if (RATE_LIMIT < 1) throw new Error("Config: RATE_LIMIT must be >= 1");
+if (MAX_UPLOAD_BYTES < 1) throw new Error("Config: MAX_UPLOAD_BYTES must be >= 1");
+
 module.exports = {
   MAX_UPLOAD_BYTES,
   RATE_LIMIT,
