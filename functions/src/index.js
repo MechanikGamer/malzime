@@ -427,7 +427,7 @@ function adminConfirmPage(action, title, message, nonce) {
   <div class="icon icon--warn">&#9888;</div>
   <div class="title">${safeTitle}</div>
   <p class="msg">${safeMessage}</p>
-  <form method="POST" action="/${safeAction}">
+  <form method="POST" action="/api/admin/${safeAction}">
     <input type="hidden" name="nonce" value="${safeNonce}">
     <button type="submit" class="btn">Bestaetigen</button>
   </form>
@@ -476,7 +476,8 @@ exports.admin = onRequest(
     const nonceToken = (req.body && req.body.nonce) || "";
 
     const isBearerAuth = bearerToken && bearerToken === adminSecret.value();
-    const isHmacAuth = hmacToken && action && verifyAdminToken(hmacToken, action, adminSecret.value());
+    const isHmacAuth =
+      hmacToken && action && req.method === "GET" && verifyAdminToken(hmacToken, action, adminSecret.value());
     const isNonceAuth =
       nonceToken && action && req.method === "POST" && verifyNonce(nonceToken, action, adminSecret.value());
 

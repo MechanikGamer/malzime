@@ -278,6 +278,44 @@ describe("admin handler", () => {
     expect(mockBoostLimit).not.toHaveBeenCalled();
   });
 
+  /* ── SEC-001: HMAC+POST must be rejected ── */
+
+  test("HMAC+POST without nonce returns 403, no mutation (SEC-001)", async () => {
+    const token = createAdminToken("boost", TEST_SECRET);
+    const req = mockReq({ path: "/api/admin/boost", method: "POST", query: { hmac: token } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockBoostLimit).not.toHaveBeenCalled();
+  });
+
+  test("HMAC+POST reset without nonce returns 403 (SEC-001)", async () => {
+    const token = createAdminToken("reset", TEST_SECRET);
+    const req = mockReq({ path: "/api/admin/reset", method: "POST", query: { hmac: token } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockResetCounter).not.toHaveBeenCalled();
+  });
+
+  /* ── BUG-001: Confirm page form action must use /api/admin/ prefix ── */
+
+  test("confirm page form action contains /api/admin/ prefix (BUG-001)", async () => {
+    const token = createAdminToken("boost", TEST_SECRET);
+    const req = mockReq({ path: "/api/admin/boost", query: { hmac: token } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.htmlBody).toContain('action="/api/admin/boost"');
+  });
+
+  test("reset confirm page form action contains /api/admin/ prefix (BUG-001)", async () => {
+    const token = createAdminToken("reset", TEST_SECRET);
+    const req = mockReq({ path: "/api/admin/reset", query: { hmac: token } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.htmlBody).toContain('action="/api/admin/reset"');
+  });
+
   /* ── SEC-002: HMAC ignores amount ── */
 
   test("Nonce boost always uses 100, ignores body amount (SEC-002)", async () => {
