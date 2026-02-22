@@ -11,7 +11,12 @@ const fs = require("fs");
 const path = require("path");
 
 const localesDir = path.join(__dirname, "locales");
-const manifest = JSON.parse(fs.readFileSync(path.join(localesDir, "manifest.json"), "utf8"));
+const manifestRaw = JSON.parse(fs.readFileSync(path.join(localesDir, "manifest.json"), "utf8"));
+/* BUG-007: Manifest-Struktur validieren — fehlendes languages-Array wuerde zu TypeError fuehren */
+if (!Array.isArray(manifestRaw.languages) || typeof manifestRaw.default !== "string") {
+  throw new Error("Invalid locale manifest: missing languages array or default string");
+}
+const manifest = manifestRaw;
 
 /**
  * Löst einen angefragten Sprachcode gegen das Manifest auf.

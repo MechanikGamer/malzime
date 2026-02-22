@@ -9,11 +9,15 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
 
   const baseUrl = "https://malzi.me";
 
+  /* BUG-003: Timeout verhindert dass ein haengender ntfy-Server die Cloud Function blockiert */
+  const controller = new AbortController();
+  const fetchTimeout = setTimeout(() => controller.abort(), 5000);
   try {
     const boostToken = createAdminToken("boost", adminSecret);
     const resetToken = createAdminToken("reset", adminSecret);
 
     const res = await fetch(ntfyUrl, {
+      signal: controller.signal,
       method: "POST",
       headers: { "Content-Type": "application/json; charset=utf-8" },
       body: JSON.stringify({
@@ -47,6 +51,8 @@ async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limi
     }
   } catch (err) {
     console.log(JSON.stringify({ warning: "ntfy-error", error: err.message }));
+  } finally {
+    clearTimeout(fetchTimeout);
   }
 }
 

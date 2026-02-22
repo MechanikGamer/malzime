@@ -28,7 +28,7 @@ function verifyAdminToken(token, action, secret) {
   const signature = token.slice(dotIndex + 1);
 
   const expires = Number(expiresStr);
-  if (isNaN(expires) || Date.now() > expires) return false;
+  if (isNaN(expires) || Date.now() >= expires) return false;
 
   const payload = `${action}.${expiresStr}`;
   const expected = crypto.createHmac("sha256", secret).update(payload).digest("hex");

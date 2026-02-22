@@ -31,7 +31,7 @@ async function analyzeWithVision(buffer, budgetMs) {
     const labels = (result.labelAnnotations || []).map((item) => item.description).filter(Boolean);
     const landmarks = (result.landmarkAnnotations || []).map((item) => item.description).filter(Boolean);
     const ocrTextRaw = result.textAnnotations && result.textAnnotations[0] ? result.textAnnotations[0].description : "";
-    let ocrText = ocrTextRaw;
+    let ocrText = ocrTextRaw.slice(0, 10000);
     if (ocrText && /shutterstock|getty|istock|depositphotos|alamy/i.test(ocrText)) {
       ocrText = "";
     }

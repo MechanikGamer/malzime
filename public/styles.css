@@ -502,23 +502,6 @@ h1 {
 
 .status.visible { display: block; }
 
-/* ── Narrative ── */
-
-.narrative {
-  font-size: 1rem;
-  line-height: 1.7;
-  font-weight: 500;
-  color: var(--text-hi);
-  padding: 18px;
-  background: var(--surface);
-  border-left: 3px solid var(--accent);
-  border-radius: 0 12px 12px 0;
-  margin-bottom: 24px;
-  animation: fadeUp 0.4s ease;
-}
-
-.narrative:empty { display: none; }
-
 /* ── Kategorie-Karten (einspaltig) ── */
 
 .facts-grid {

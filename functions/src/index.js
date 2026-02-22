@@ -160,7 +160,9 @@ exports.analyze = onRequest(
           adminSecret: adminSecret.value(),
           count: counterResult.count,
           limit: counterResult.limit,
-        }).catch(() => {});
+        }).catch((err) => {
+          console.log(JSON.stringify({ warning: "ntfy-error", error: err.message }));
+        });
       }
 
       if (!counterResult.allowed) {
@@ -198,7 +200,9 @@ exports.analyze = onRequest(
 
         /* BUG-007: Privacy-Risks und EXIF auch bei Tier-Fotos durchreichen —
            ein sichtbares Nummernschild im Hintergrund soll trotzdem gemeldet werden */
-        incrementTotals().catch(() => {});
+        incrementTotals().catch((err) => {
+          console.log(JSON.stringify({ warning: "incrementTotals-error", error: err.message }));
+        });
         res.json({
           profiles: { normal: normalProfile, boost: boostProfile },
           privacyRisks,
@@ -283,7 +287,9 @@ exports.analyze = onRequest(
       const hasAnyProfile = hasCategories(profiles.normal) || hasCategories(profiles.boost);
 
       if (hasAnyProfile) {
-        incrementTotals().catch(() => {});
+        incrementTotals().catch((err) => {
+          console.log(JSON.stringify({ warning: "incrementTotals-error", error: err.message }));
+        });
         const normalData = profiles.normal || {};
         const boostData = profiles.boost || {};
         res.json({
