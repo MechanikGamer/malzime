@@ -175,7 +175,7 @@ Bei blockierten Bildern ist `profiles: null` und `blockedReason` enthaelt den Gr
 ## Tests
 
 ```bash
-# Backend (Jest, 221 Tests)
+# Backend (Jest, 222 Tests)
 cd functions && npm test
 
 # Frontend (Vitest + jsdom, 128 Tests)
@@ -192,7 +192,7 @@ cd functions && npm run format:check   # Backend Prettier
 npm run format:frontend:check          # Frontend Prettier
 ```
 
-**Backend (221 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Nonce-Flow, Tier-Erkennung, Config, Counter, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, XML-Escaping, ntfy-Benachrichtigungen, i18n-Guardian.
+**Backend (222 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Nonce-Flow, Tier-Erkennung, Config, Counter, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, XML-Escaping, ntfy-Benachrichtigungen, i18n-Guardian.
 
 **Frontend (128 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, Stats-Seite, i18n-Modul, i18n-Guardian.
 

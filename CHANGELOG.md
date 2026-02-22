@@ -23,6 +23,7 @@ Wartungsmodus-Modal, Prompt-Verbesserungen und Backend-Hardening.
 ### Bugfixes
 
 - **Upload-Limit korrigiert**: Frontend zeigte "max 20 MB" an, Backend akzeptierte aber nur 6 MB. Upload-Hint, Fehlermeldung und JS-Check auf 6 MB angeglichen
+- **ntfy-Links Self-Hosting-tauglich**: Admin-URLs in ntfy-Benachrichtigungen (Boost, Reset, Stats) kommen jetzt aus `domains.js` statt einer hardcodierten Domain. Self-Hosted-Instanzen bekommen korrekte Links
 
 ### Sicherheit
 
@@ -30,7 +31,7 @@ Wartungsmodus-Modal, Prompt-Verbesserungen und Backend-Hardening.
 
 ### Tests
 
-- **Testabdeckung**: 221 Backend + 128 Frontend = 349 Tests
+- **Testabdeckung**: 222 Backend + 128 Frontend = 350 Tests
 
 ## [1.2.3] — 2026-02-22
 

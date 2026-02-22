@@ -76,6 +76,22 @@ describe("notifyLimitReached", () => {
     expect(hmacParam).toMatch(/^\d+\.[a-f0-9]{64}$/);
   });
 
+  test("uses base URL from domains.js, not hardcoded", async () => {
+    await notifyLimitReached({
+      ntfyUrl: "https://ntfy.example.com",
+      ntfyTopic: "topic",
+      adminSecret: "secret",
+      count: 500,
+      limit: 500,
+    });
+
+    const { ALLOWED_ORIGINS } = require("../domains");
+    const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
+    expect(body.actions[0].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(body.actions[1].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(body.actions[2].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
   test("does nothing when ntfyUrl is empty", async () => {
     await notifyLimitReached({
       ntfyUrl: "",
