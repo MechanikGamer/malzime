@@ -3,6 +3,7 @@ const { HOURLY_LIMIT, HOURLY_WINDOW_MINUTES } = require("./config");
 
 const CURRENT_DOC = "stats/current";
 const TOTALS_DOC = "stats/totals";
+const MAINTENANCE_DOC = "config/maintenance";
 
 /**
  * Filtert das recentAnalyses-Array: nur Timestamps der letzten windowMs behalten.
@@ -228,12 +229,62 @@ async function resetCounter() {
   await ref.set({ recentAnalyses: [], limit: HOURLY_LIMIT }, { merge: true });
 }
 
+/* ── Maintenance-Modus (Kill-Switch) ── */
+
+let maintenanceCache = { data: null, expiresAt: 0 };
+const MAINTENANCE_CACHE_TTL_MS = 30000;
+
+/**
+ * Liest den Maintenance-Status aus Firestore (30s Cache).
+ * Fail-open: Bei Fehler wird der Service NICHT gesperrt.
+ */
+async function getMaintenanceStatus() {
+  const now = Date.now();
+  if (maintenanceCache.data && now < maintenanceCache.expiresAt) {
+    return maintenanceCache.data;
+  }
+  try {
+    const db = getFirestore();
+    const snap = await db.doc(MAINTENANCE_DOC).get();
+    const result =
+      snap.exists && snap.data().enabled
+        ? { enabled: true, message: snap.data().message || "" }
+        : { enabled: false, message: "" };
+    maintenanceCache = { data: result, expiresAt: now + MAINTENANCE_CACHE_TTL_MS };
+    return result;
+  } catch (err) {
+    console.log(JSON.stringify({ warning: "maintenance-read-error", error: err.message }));
+    return { enabled: false, message: "" };
+  }
+}
+
+/**
+ * Setzt den Maintenance-Modus (Admin-Funktion).
+ */
+async function setMaintenanceMode(enabled, message) {
+  const db = getFirestore();
+  await db.doc(MAINTENANCE_DOC).set({
+    enabled: !!enabled,
+    message: message || "",
+    updatedAt: Date.now(),
+  });
+  maintenanceCache = { data: null, expiresAt: 0 };
+}
+
+/* Nur für Tests — Cache zurücksetzen */
+function _clearMaintenanceCache() {
+  maintenanceCache = { data: null, expiresAt: 0 };
+}
+
 module.exports = {
   checkAndIncrement,
   incrementTotals,
   getStats,
   boostLimit,
   resetCounter,
+  getMaintenanceStatus,
+  setMaintenanceMode,
+  _clearMaintenanceCache,
   filterRecent,
   calcRetrySeconds,
 };

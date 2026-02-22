@@ -27,12 +27,16 @@ const {
   getStats,
   boostLimit,
   resetCounter,
+  getMaintenanceStatus,
+  setMaintenanceMode,
+  _clearMaintenanceCache,
   filterRecent,
   calcRetrySeconds,
 } = require("../counter");
 
 beforeEach(() => {
   jest.clearAllMocks();
+  _clearMaintenanceCache();
   mockDoc.mockReturnValue({ get: mockGet, update: mockUpdate, set: mockSet });
 });
 
@@ -437,5 +441,60 @@ describe("resetCounter", () => {
   test("clears recentAnalyses and resets limit", async () => {
     await resetCounter();
     expect(mockSet).toHaveBeenCalledWith({ recentAnalyses: [], limit: 500 }, { merge: true });
+  });
+});
+
+/* ── getMaintenanceStatus ── */
+
+describe("getMaintenanceStatus", () => {
+  test("returns enabled:false when document does not exist", async () => {
+    mockDoc.mockReturnValue({ get: jest.fn().mockResolvedValue({ exists: false }) });
+    const result = await getMaintenanceStatus();
+    expect(result.enabled).toBe(false);
+  });
+
+  test("returns enabled:true with message when flag is set", async () => {
+    mockDoc.mockReturnValue({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () => ({ enabled: true, message: "Wartungsarbeiten" }),
+      }),
+    });
+    const result = await getMaintenanceStatus();
+    expect(result.enabled).toBe(true);
+    expect(result.message).toBe("Wartungsarbeiten");
+  });
+
+  test("returns enabled:false when flag is not set", async () => {
+    mockDoc.mockReturnValue({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () => ({ enabled: false }),
+      }),
+    });
+    const result = await getMaintenanceStatus();
+    expect(result.enabled).toBe(false);
+  });
+
+  test("fail-open on Firestore error", async () => {
+    mockDoc.mockReturnValue({
+      get: jest.fn().mockRejectedValue(new Error("DB down")),
+    });
+    const result = await getMaintenanceStatus();
+    expect(result.enabled).toBe(false);
+  });
+});
+
+/* ── setMaintenanceMode ── */
+
+describe("setMaintenanceMode", () => {
+  test("writes enabled flag to Firestore", async () => {
+    await setMaintenanceMode(true, "Wartung aktiv");
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ enabled: true, message: "Wartung aktiv" }));
+  });
+
+  test("writes disabled flag to Firestore", async () => {
+    await setMaintenanceMode(false);
+    expect(mockSet).toHaveBeenCalledWith(expect.objectContaining({ enabled: false, message: "" }));
   });
 });

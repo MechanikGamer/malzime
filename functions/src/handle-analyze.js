@@ -6,7 +6,7 @@ const { buildPrivacyRisks } = require("./privacy");
 const { describeImage, buildDescriptionFromLabels, generateBothProfiles, isQuotaError } = require("./gemini");
 const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
-const { checkAndIncrement, incrementTotals } = require("./counter");
+const { checkAndIncrement, incrementTotals, getMaintenanceStatus } = require("./counter");
 const { notifyLimitReached } = require("./notify");
 
 async function handleAnalyze(req, res, secrets) {
@@ -16,6 +16,13 @@ async function handleAnalyze(req, res, secrets) {
   try {
     if (req.method !== "POST") {
       res.status(405).json({ error: "Method not allowed" });
+      return;
+    }
+
+    /* Kill-Switch: Maintenance-Modus prüfen (30s Cache, fail-open) */
+    const maintenance = await getMaintenanceStatus();
+    if (maintenance.enabled) {
+      res.status(503).json({ maintenance: true, message: maintenance.message });
       return;
     }
 

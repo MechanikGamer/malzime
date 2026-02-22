@@ -121,6 +121,17 @@ export async function analyzeImage() {
         msg = t("error.imageTooLarge");
       } else if (response.status === 400) {
         msg = t("error.invalidFormat");
+      } else if (response.status === 503) {
+        try {
+          const body = await response.clone().json();
+          if (body.maintenance) {
+            setStatus(body.message || t("error.maintenance"));
+            return;
+          }
+        } catch (_) {
+          /* parse failed — generischer Serverfehler */
+        }
+        msg = t("error.serverError");
       } else if (response.status >= 500) {
         msg = t("error.serverError");
       }

@@ -14,12 +14,14 @@ const mockIncrementTotals = jest.fn();
 const mockGetStats = jest.fn();
 const mockBoostLimit = jest.fn();
 const mockResetCounter = jest.fn();
+const mockGetMaintenanceStatus = jest.fn();
 jest.mock("../counter", () => ({
   checkAndIncrement: mockCheckAndIncrement,
   incrementTotals: mockIncrementTotals,
   getStats: mockGetStats,
   boostLimit: mockBoostLimit,
   resetCounter: mockResetCounter,
+  getMaintenanceStatus: mockGetMaintenanceStatus,
 }));
 
 const mockNotifyLimitReached = jest.fn();
@@ -100,6 +102,7 @@ beforeEach(() => {
   mockCheckRateLimit.mockReturnValue(true);
   mockBuildPrivacyRisks.mockReturnValue([]);
   mockIsQuotaError.mockReturnValue(false);
+  mockGetMaintenanceStatus.mockResolvedValue({ enabled: false, message: "" });
   mockCheckAndIncrement.mockResolvedValue({ allowed: true, count: 1, limit: 500 });
   mockIncrementTotals.mockResolvedValue();
   mockNotifyLimitReached.mockResolvedValue();
@@ -1103,5 +1106,56 @@ describe("analyze handler", () => {
 
     expect(res.status).toHaveBeenCalledWith(429);
     expect(res.body.blocked).toBe("limit");
+  });
+
+  /* ── Kill-Switch: Maintenance-Modus ── */
+  test("returns 503 when maintenance mode is enabled", async () => {
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: true, message: "Wartungsarbeiten" });
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(503);
+    expect(res.body.maintenance).toBe(true);
+    expect(res.body.message).toBe("Wartungsarbeiten");
+    expect(mockCheckAndIncrement).not.toHaveBeenCalled();
+    expect(mockAnalyzeWithVision).not.toHaveBeenCalled();
+  });
+
+  test("proceeds normally when maintenance mode is disabled", async () => {
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: false, message: "" });
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    mockAnalyzeWithVision.mockResolvedValue({
+      labels: ["Person"],
+      landmarks: [],
+      ocrText: "",
+      ocrTextRaw: "",
+      faces: [],
+      objects: [],
+    });
+    mockDescribeImage.mockResolvedValue("A person");
+    mockGenerateBothProfiles.mockResolvedValue({
+      normal: {
+        categories: { a: { label: "A", value: "v", confidence: 0.5 } },
+        ad_targeting: [],
+        manipulation_triggers: [],
+        profileText: "",
+      },
+      boost: null,
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.statusCode).toBe(200);
   });
 });

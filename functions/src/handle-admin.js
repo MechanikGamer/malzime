@@ -1,4 +1,4 @@
-const { getStats, boostLimit, resetCounter } = require("./counter");
+const { getStats, boostLimit, resetCounter, setMaintenanceMode, getMaintenanceStatus } = require("./counter");
 const { verifyAdminToken, createNonce, verifyNonce, consumeNonce, cleanupNonces } = require("./auth");
 
 function escapeHtml(str) {
@@ -82,7 +82,13 @@ function adminSuccessPage(title, message) {
 
 async function handleAdmin(req, res, secrets) {
   const path = req.path || "";
-  const action = path.includes("boost") ? "boost" : path.includes("reset") ? "reset" : "";
+  const action = path.includes("maintenance")
+    ? "maintenance"
+    : path.includes("boost")
+      ? "boost"
+      : path.includes("reset")
+        ? "reset"
+        : "";
 
   /* Auth: Bearer (POST), HMAC (GET → Bestaetigungsseite), oder Nonce (POST → Mutation) */
   const auth = req.headers["authorization"] || "";
@@ -92,7 +98,11 @@ async function handleAdmin(req, res, secrets) {
 
   const isBearerAuth = bearerToken && bearerToken === secrets.adminSecret.value();
   const isHmacAuth =
-    hmacToken && action && req.method === "GET" && verifyAdminToken(hmacToken, action, secrets.adminSecret.value());
+    hmacToken &&
+    action &&
+    action !== "maintenance" &&
+    req.method === "GET" &&
+    verifyAdminToken(hmacToken, action, secrets.adminSecret.value());
   const isNonceAuth =
     nonceToken && action && req.method === "POST" && verifyNonce(nonceToken, action, secrets.adminSecret.value());
 
@@ -153,6 +163,17 @@ async function handleAdmin(req, res, secrets) {
       } else {
         res.json({ ok: true, action: "reset", stats: data });
       }
+    } else if (path === "/maintenance" || path === "/api/admin/maintenance") {
+      /* Maintenance nur per Bearer-Auth (kein HMAC/Nonce-Flow nötig) */
+      if (!isBearerAuth) {
+        res.status(403).json({ error: "Maintenance requires Bearer auth" });
+        return;
+      }
+      const enabled = req.body && req.body.enabled !== undefined ? !!req.body.enabled : true;
+      const message = String((req.body && req.body.message) || "").slice(0, 500);
+      await setMaintenanceMode(enabled, message);
+      const status = await getMaintenanceStatus();
+      res.json({ ok: true, action: "maintenance", maintenance: status });
     } else {
       res.status(404).json({ error: "Unknown action" });
     }

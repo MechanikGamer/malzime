@@ -56,6 +56,7 @@
   "error.readFailed": "Das Bild konnte nicht gelesen werden. Versuch ein anderes Foto.",
   "error.decodeFailed": "Das Bildformat wird nicht unterstützt. Versuch JPEG oder PNG.",
   "error.offline": "Keine Internetverbindung. Bitte prüfe dein WLAN.",
+  "error.maintenance": "malziME ist gerade im Wartungsmodus. Bitte versuch es später nochmal.",
   "error.networkError": "Verbindung zum Server fehlgeschlagen. Prüfe dein Internet und versuch es nochmal.",
 
   "render.blockedFallback": "Die Analyse konnte nicht abgeschlossen werden. Versuch es mit einem anderen Foto.",

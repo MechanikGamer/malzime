@@ -47,12 +47,17 @@ const mockGetStats = jest.fn().mockResolvedValue({
   totals: { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
 });
 
+const mockSetMaintenanceMode = jest.fn().mockResolvedValue();
+const mockGetMaintenanceStatus = jest.fn().mockResolvedValue({ enabled: false, message: "" });
+
 jest.mock("../counter", () => ({
   checkAndIncrement: jest.fn(),
   incrementTotals: jest.fn(),
   getStats: (...args) => mockGetStats(...args),
   boostLimit: (...args) => mockBoostLimit(...args),
   resetCounter: (...args) => mockResetCounter(...args),
+  setMaintenanceMode: (...args) => mockSetMaintenanceMode(...args),
+  getMaintenanceStatus: (...args) => mockGetMaintenanceStatus(...args),
   filterRecent: jest.fn(),
   calcRetrySeconds: jest.fn(),
 }));
@@ -123,6 +128,8 @@ beforeEach(() => {
     current: { count: 100, limit: 500, limitActive: false, retryAfterSeconds: 0, hourlyTotal: 100 },
     totals: { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
   });
+  mockSetMaintenanceMode.mockResolvedValue();
+  mockGetMaintenanceStatus.mockResolvedValue({ enabled: false, message: "" });
 });
 
 describe("admin handler", () => {
@@ -446,5 +453,72 @@ describe("admin handler", () => {
     await admin(req, res);
     expect(mockBoostLimit).toHaveBeenCalledWith(100);
     expect(res.type).toHaveBeenCalledWith("html");
+  });
+
+  /* ── Maintenance (Kill-Switch) ── */
+
+  test("maintenance enable with Bearer auth", async () => {
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: true, message: "Test" });
+    const req = mockReq({
+      path: "/api/admin/maintenance",
+      method: "POST",
+      headers: { authorization: `Bearer ${TEST_SECRET}` },
+      body: { enabled: true, message: "Test" },
+    });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockSetMaintenanceMode).toHaveBeenCalledWith(true, "Test");
+    expect(res.body.ok).toBe(true);
+    expect(res.body.action).toBe("maintenance");
+    expect(res.body.maintenance.enabled).toBe(true);
+  });
+
+  test("maintenance disable with Bearer auth", async () => {
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: false, message: "" });
+    const req = mockReq({
+      path: "/api/admin/maintenance",
+      method: "POST",
+      headers: { authorization: `Bearer ${TEST_SECRET}` },
+      body: { enabled: false },
+    });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockSetMaintenanceMode).toHaveBeenCalledWith(false, "");
+    expect(res.body.maintenance.enabled).toBe(false);
+  });
+
+  test("maintenance rejects HMAC auth (Bearer only)", async () => {
+    const token = createAdminToken("maintenance", TEST_SECRET);
+    const req = mockReq({ path: "/api/admin/maintenance", query: { hmac: token } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(mockSetMaintenanceMode).not.toHaveBeenCalled();
+  });
+
+  test("maintenance defaults to enabled:true when body.enabled omitted", async () => {
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: true, message: "" });
+    const req = mockReq({
+      path: "/api/admin/maintenance",
+      method: "POST",
+      headers: { authorization: `Bearer ${TEST_SECRET}` },
+    });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockSetMaintenanceMode).toHaveBeenCalledWith(true, "");
+  });
+
+  test("maintenance truncates message to 500 chars", async () => {
+    const longMsg = "A".repeat(1000);
+    mockGetMaintenanceStatus.mockResolvedValue({ enabled: true, message: longMsg.slice(0, 500) });
+    const req = mockReq({
+      path: "/api/admin/maintenance",
+      method: "POST",
+      headers: { authorization: `Bearer ${TEST_SECRET}` },
+      body: { enabled: true, message: longMsg },
+    });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockSetMaintenanceMode).toHaveBeenCalledWith(true, "A".repeat(500));
   });
 });
