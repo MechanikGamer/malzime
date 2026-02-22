@@ -218,8 +218,11 @@ async function renderGpsMap(data) {
   try {
     /* Geocoding wurde bereits beim EXIF-Parsen gestartet (parallel zur Analyse).
        GPS verlässt nie den Server — Nominatim wird direkt vom Browser aufgerufen. */
-    const address = state.pendingGeocode ? await state.pendingGeocode : null;
-    state.pendingGeocode = null;
+    /* BUG-002: Lokale Referenz — verhindert dass ein neueres Geocoding-Promise
+       ueberschrieben wird wenn zwischen await und Cleanup eine neue Analyse startet */
+    const geocodePromise = state.pendingGeocode;
+    const address = geocodePromise ? await geocodePromise : null;
+    if (state.pendingGeocode === geocodePromise) state.pendingGeocode = null;
 
     elements.gpsMap.innerHTML = `
       <div class="map-wrapper">
