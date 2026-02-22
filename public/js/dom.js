@@ -17,6 +17,9 @@ export const elements = {
   exportPdf: document.getElementById("exportPdf"),
   limitBanner: document.getElementById("limitBanner"),
   limitCountdown: document.getElementById("limitCountdown"),
+  maintenanceModal: document.getElementById("maintenanceModal"),
+  maintenanceMessage: document.getElementById("maintenanceMessage"),
+  maintenanceReload: document.getElementById("maintenanceReload"),
 };
 
 export function escapeHtml(str) {

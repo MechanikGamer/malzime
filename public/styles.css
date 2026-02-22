@@ -930,6 +930,61 @@ h1 {
   transform: translateY(0);
 }
 
+/* ── Maintenance-Modal (Warn-Theme) ── */
+
+.modal-box--warn {
+  border-color: rgba(248, 113, 113, 0.2);
+  box-shadow:
+    0 0 40px rgba(248, 113, 113, 0.06),
+    0 0 80px rgba(248, 113, 113, 0.03),
+    0 24px 48px rgba(0, 0, 0, 0.5);
+}
+
+.modal-box--warn::before {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(248, 113, 113, 0.02) 2px,
+      rgba(248, 113, 113, 0.02) 4px
+    );
+}
+
+.modal-box--warn::after {
+  background: linear-gradient(90deg, transparent, var(--warn), transparent);
+}
+
+.modal-box--warn .modal-icon {
+  color: var(--warn);
+  filter: drop-shadow(0 0 12px rgba(248, 113, 113, 0.4));
+  animation: warnIconPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes warnIconPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 12px rgba(248, 113, 113, 0.4)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 20px rgba(248, 113, 113, 0.6)); }
+}
+
+.modal-box--warn h2 {
+  color: var(--warn);
+}
+
+.modal-box--warn .modal-divider {
+  background: linear-gradient(90deg, transparent, rgba(248, 113, 113, 0.3), transparent);
+}
+
+.modal-box--warn .modal-btn {
+  color: var(--warn);
+  border-color: rgba(248, 113, 113, 0.3);
+}
+
+.modal-box--warn .modal-btn:hover {
+  background: var(--warn-dim);
+  border-color: var(--warn);
+  box-shadow: 0 0 20px rgba(248, 113, 113, 0.15);
+}
+
 /* ── Disclaimer ── */
 
 .disclaimer {

@@ -65,31 +65,27 @@ Hier sind alle Stellen die du fuer deine eigene Instanz anpassen musst.
 
 ### 5a. Backend: CORS + Origin-Check
 
-**Datei:** `functions/src/index.js`
+**Datei:** `functions/src/domains.js`
 
-Die CORS-Konfiguration (Zeile 18) und die Origin-Pruefung (Zeile 44–49) enthalten die erlaubten Domains. Ersetze sie mit deinen eigenen:
+Alle erlaubten Domains sind zentral in einer Datei definiert. Ersetze sie mit deinen eigenen:
 
 ```js
-// Zeile 18 — CORS-Konfiguration:
-cors: [
-  "https://DEINE-DOMAIN.com",
-  "https://www.DEINE-DOMAIN.com",
-  "https://DEIN-PROJEKT.web.app",
-  "https://DEIN-PROJEKT.firebaseapp.com"
-],
-
-// Zeile 44–49 — Origin-Pruefung (gleiche Domains):
-const allowedOrigins = [
+const ALLOWED_ORIGINS = [
   "https://DEINE-DOMAIN.com",
   "https://www.DEINE-DOMAIN.com",
   "https://DEIN-PROJEKT.web.app",
   "https://DEIN-PROJEKT.firebaseapp.com",
 ];
+
+module.exports = { ALLOWED_ORIGINS };
 ```
 
 Falls du keine eigene Domain hast, reichen die Firebase-Defaults:
 ```js
-cors: ["https://DEIN-PROJEKT.web.app", "https://DEIN-PROJEKT.firebaseapp.com"],
+const ALLOWED_ORIGINS = [
+  "https://DEIN-PROJEKT.web.app",
+  "https://DEIN-PROJEKT.firebaseapp.com",
+];
 ```
 
 ### 5b. Backend: Projekt-ID Fallback
@@ -217,7 +213,7 @@ Deine Instanz ist jetzt unter `https://DEIN-PROJEKT.web.app` erreichbar.
 
 1. Firebase Console > Hosting > **Benutzerdefinierte Domain hinzufuegen**
 2. DNS-Eintraege bei deinem Domain-Anbieter setzen
-3. CORS-Liste in `functions/src/index.js` um deine Domain erweitern
+3. CORS-Liste in `functions/src/domains.js` um deine Domain erweitern
 4. Neu deployen: `firebase deploy --only functions`
 
 ---
@@ -226,7 +222,7 @@ Deine Instanz ist jetzt unter `https://DEIN-PROJEKT.web.app` erreichbar.
 
 Bevor du live gehst:
 
-- [ ] CORS-Liste und Origin-Check enthalten deine Domains
+- [ ] `functions/src/domains.js` enthaelt deine Domains
 - [ ] Impressum und Datenschutzerklaerung sind auf dich zugeschnitten
 - [ ] Meta-Tags (OG, Twitter, canonical) zeigen auf deine Domain
 - [ ] User-Agent in geocoding.js enthaelt deinen Projektnamen

@@ -66,7 +66,7 @@
     <link rel="dns-prefetch" href="https://nominatim.openstreetmap.org" />
     <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin />
     <link rel="stylesheet" href="./lib/leaflet/leaflet.css" />
-    <link rel="stylesheet" href="./styles.css?v=2026022106" />
+    <link rel="stylesheet" href="./styles.css?v=2026022201" />
   </head>
   <body>
     <a href="#main" class="skip-link" tabindex="0">Zum Inhalt springen</a>
@@ -184,15 +184,15 @@
         <p class="demo-label" data-i18n="demo.label">Kein Foto zur Hand? Probier ein Beispielbild:</p>
         <div class="demo-grid">
           <button class="demo-thumb" data-demo="selfie" type="button" tabindex="0">
-            <img src="./img/demo/demo-selfie-thumb.jpg?v=2026022106" alt="" loading="lazy" />
+            <img src="./img/demo/demo-selfie-thumb.jpg?v=2026022201" alt="" loading="lazy" />
             <span class="demo-caption" data-i18n="demo.selfie">Selfie am Stephansplatz</span>
           </button>
           <button class="demo-thumb" data-demo="cafe" type="button" tabindex="0">
-            <img src="./img/demo/demo-cafe-thumb.jpg?v=2026022106" alt="" loading="lazy" />
+            <img src="./img/demo/demo-cafe-thumb.jpg?v=2026022201" alt="" loading="lazy" />
             <span class="demo-caption" data-i18n="demo.cafe">Im Caf&eacute; in Salzburg</span>
           </button>
           <button class="demo-thumb" data-demo="hiker" type="button" tabindex="0">
-            <img src="./img/demo/demo-hiker-thumb.jpg?v=2026022106" alt="" loading="lazy" />
+            <img src="./img/demo/demo-hiker-thumb.jpg?v=2026022201" alt="" loading="lazy" />
             <span class="demo-caption" data-i18n="demo.hiker">Wanderung bei Hallstatt</span>
           </button>
         </div>
@@ -239,7 +239,20 @@
       </div>
     </div>
 
+    <!-- Maintenance-Modal (blockiert Seite bei Wartungsmodus) -->
+    <div class="modal-overlay" id="maintenanceModal" role="alertdialog" aria-modal="true" aria-labelledby="maintenanceTitle">
+      <div class="modal-box modal-box--warn">
+        <div class="modal-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 9v4m0 4h.01M3.6 19.8h16.8a1.2 1.2 0 001.04-1.8L13.04 4.2a1.2 1.2 0 00-2.08 0L2.56 18a1.2 1.2 0 001.04 1.8z"/></svg>
+        </div>
+        <h2 id="maintenanceTitle" data-i18n="maintenance.title">Wartungsmodus</h2>
+        <p id="maintenanceMessage" data-i18n="maintenance.text">malziME ist gerade im Wartungsmodus. Bitte versuch es sp&auml;ter nochmal.</p>
+        <div class="modal-divider"></div>
+        <button class="modal-btn" id="maintenanceReload" tabindex="0" data-i18n="maintenance.button">Seite neu laden</button>
+      </div>
+    </div>
+
     <script src="./lib/leaflet/leaflet.js"></script>
-    <script type="module" src="./app.js?v=2026022106"></script>
+    <script type="module" src="./app.js?v=2026022201"></script>
   </body>
 </html>

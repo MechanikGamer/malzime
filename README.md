@@ -33,6 +33,7 @@ Workshop-Tool fuer Medienkompetenz und Datenschutz-Sensibilisierung. Zeigt Teiln
 - **PDF-Export**: Ergebnisse als PDF speichern (fuer Workshop-Diskussionen)
 - **Demo-Fotos**: 3 anklickbare Stock-Fotos mit Fake-EXIF fuer Workshops (echte KI-Analyse, kein vorgefertigtes Ergebnis)
 - **Mehrsprachig vorbereitet**: i18n-System fuer UI, Prompts und Tierprofile (aktuell Deutsch)
+- **Wartungsmodus**: Admin-gesteuerter Wartungsmodus mit rotem Warn-Modal (blockiert Seite komplett)
 - **Kein Tracking**: Keine Cookies, keine Analytics, keine Werbung, keine Speicherung
 
 ## Architektur
@@ -58,6 +59,7 @@ functions/src/              Firebase Cloud Functions (2nd Gen, Node 24, europe-w
   animal.js                 Personen-/Tier-Erkennung (Word-Boundary-Matching) + Easter-Egg-Profile
   counter.js                Firestore-Zaehler: Stundenlimit, Totals, Stats, Boost, Reset
   auth.js                   HMAC-basierte Admin-Token + Nonces
+  domains.js                Zentrale CORS-/Origin-Whitelist
   notify.js                 ntfy Push-Benachrichtigungen bei Limit-Erreichung
   middleware.js              Rate Limiting (IP-basiert, 200/10min), IP-Extraktion
   upload.js                 Multipart- und JSON-Body-Parsing
@@ -173,10 +175,10 @@ Bei blockierten Bildern ist `profiles: null` und `blockedReason` enthaelt den Gr
 ## Tests
 
 ```bash
-# Backend (Jest, 187 Tests)
+# Backend (Jest, 221 Tests)
 cd functions && npm test
 
-# Frontend (Vitest + jsdom, 126 Tests)
+# Frontend (Vitest + jsdom, 128 Tests)
 npm run test:frontend
 
 # Coverage
@@ -190,9 +192,9 @@ cd functions && npm run format:check   # Backend Prettier
 npm run format:frontend:check          # Frontend Prettier
 ```
 
-**Backend (187 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Nonce-Flow, Tier-Erkennung, Config, Counter, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, XML-Escaping, ntfy-Benachrichtigungen, i18n-Guardian.
+**Backend (221 Tests):** HTTP-Handler, Admin-Endpunkte, HMAC-Auth, Nonce-Flow, Tier-Erkennung, Config, Counter, Middleware (Rate Limiting), Privacy-Risiken, Upload-Parsing, Vision API, Magic-Byte-Validierung, XML-Escaping, ntfy-Benachrichtigungen, i18n-Guardian.
 
-**Frontend (126 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, Stats-Seite, i18n-Modul, i18n-Guardian.
+**Frontend (128 Tests):** DOM-Helpers, State, Scan-Animation, Disclaimer-Modal, Limit-Banner, Geocoding, Render-Pipeline, API-Integration, Stats-Seite, i18n-Modul, i18n-Guardian.
 
 ## CI/CD
 

@@ -13,7 +13,8 @@ public/              Firebase Hosting SPA (Vanilla JS, kein Build-Schritt)
     geocoding.js     Nominatim Reverse Geocoding (client-seitig)
     render.js        Ergebnis-Rendering (Profile, EXIF, Karte, Datenwert)
     state.js         Globaler State (requestId, isAnalyzing)
-    ui.js            UI-Komponenten (Disclaimer-Modal, Scan-Animation, Bias-Toggle, Limit-Banner)
+    ui.js            UI-Komponenten (Disclaimer-Modal, Maintenance-Modal, Scan-Animation, Bias-Toggle, Limit-Banner)
+    demo.js          Demo-Foto-Initialisierung (Click-Handler fuer Stock-Fotos)
     stats.js         Stats-Seite: Fetch /api/stats, Limit-Balken, Countdown
     i18n.js          i18n Micro-Modul (initI18n, t, getLanguage, applyTranslations)
   locales/           Frontend-Locale-Dateien
@@ -40,6 +41,7 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   privacy.js         Privacy-Risiko-Erkennung aus OCR/Labels
   gemini.js          Vertex AI Gemini: Bildbeschreibung (multimodal) + Profilgenerierung (text)
   auth.js            HMAC-basierte Admin-Token + Nonces (createAdminToken, verifyAdminToken, createNonce, verifyNonce)
+  domains.js         Zentrale CORS-/Origin-Whitelist (ALLOWED_ORIGINS)
   i18n.js            Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
   locales/           Backend-Locale-Dateien
     manifest.json    Verfuegbare Sprachen + Default
@@ -55,8 +57,8 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (187 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (126 tests)
+- `cd functions && npm test` — run Jest backend unit tests (221 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (128 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend

@@ -2,7 +2,14 @@ import { elements } from "./dom.js";
 import { state } from "./state.js";
 import { prepareImage } from "./exif.js";
 import { startGeocoding } from "./geocoding.js";
-import { setStatus, startScanAnim, stopScanAnim, showDisclaimerModal, showLimitBanner } from "./ui.js";
+import {
+  setStatus,
+  startScanAnim,
+  stopScanAnim,
+  showDisclaimerModal,
+  showLimitBanner,
+  showMaintenanceModal,
+} from "./ui.js";
 import { renderCurrentMode } from "./render.js";
 import { t, getLanguage } from "./i18n.js";
 
@@ -125,7 +132,7 @@ export async function analyzeImage() {
         try {
           const body = await response.clone().json();
           if (body.maintenance) {
-            setStatus(body.message || t("error.maintenance"));
+            showMaintenanceModal(body.message);
             return;
           }
         } catch (_) {

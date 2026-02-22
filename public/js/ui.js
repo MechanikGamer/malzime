@@ -180,6 +180,25 @@ function updateCountdownText(seconds) {
   elements.limitCountdown.textContent = t("limit.countdown", { time });
 }
 
+/* ── Maintenance-Modal ── */
+
+export function showMaintenanceModal(message) {
+  const msg = message || t("maintenance.text");
+  elements.maintenanceMessage.textContent = msg;
+  elements.maintenanceModal.classList.add("active");
+  elements.maintenanceReload.focus();
+
+  /* Focus-Trap: Tab bleibt im Modal, Escape nicht möglich */
+  document.addEventListener("keydown", maintenanceKeyHandler);
+}
+
+function maintenanceKeyHandler(e) {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    elements.maintenanceReload.focus();
+  }
+}
+
 /* ── PDF-Export Hilfsfunktionen ── */
 
 export function insertPrintNotes() {

@@ -4,6 +4,25 @@ Alle relevanten Aenderungen an malziME werden hier dokumentiert.
 
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.2.4] — 2026-02-22
+
+Wartungsmodus-Modal, Prompt-Verbesserungen und Backend-Hardening.
+
+### Features
+
+- **Wartungsmodus-Modal**: Neues rotes Warn-Modal mit Blur-Hintergrund blockiert die gesamte Seite im Wartungsmodus. Focus-Trap (nur Reload-Button erreichbar), `role="alertdialog"`, rote Scan-Lines und pulsierendes Warn-Icon. Aktivierung per Admin-API (`POST /api/admin/maintenance`) oder automatisch bei 503-Response
+- **Maintenance-Check beim Seitenstart**: Die Hauptseite prueft beim Laden via `/api/stats` ob der Wartungsmodus aktiv ist und zeigt sofort das Modal
+
+### Verbesserungen
+
+- **Ethnizitaets-Erkennung verbessert**: Bildbeschreibungs-Prompt enthaelt jetzt eine explizite Hauttöne-Skala (very fair bis very dark brown), detaillierte Gesichtszug-Merkmale (Nasenform, Augenform, Kieferlinie, Jochbein) und differenzierte Haarstruktur-Begriffe (straight/wavy/curly/coiled/kinky). Verhindert fehlerhafte Zuordnungen bei suedasiatischen, nahöstlichen und anderen nicht-europaeischen Personen
+- **Einkommensschaetzung kalibriert**: Alle Prompts orientieren sich jetzt am mitteleuropaeischen Lohnniveau (Oesterreich/Deutschland) mit konkreten Referenzwerten (Studierende 400-1.200€, Berufseinsteiger 1.800-2.500€ brutto, Median 2.500€ brutto) statt an US-amerikanischen Gehaeltern
+- **Herkunfts-Ableitung praezisiert**: Ethnische Herkunft wird ausschliesslich aus Hautton, Gesichtszuegen und Haarstruktur abgeleitet — der Hintergrund/Ort im Bild wird explizit ignoriert (Person kann im Urlaub sein)
+
+### Tests
+
+- **Testabdeckung**: 221 Backend + 128 Frontend = 349 Tests
+
 ## [1.2.3] — 2026-02-22
 
 Demo-Bilder, UX-Verbesserungen und Code-Cleanup.

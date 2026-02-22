@@ -3,7 +3,13 @@ import { elements } from "./js/dom.js";
 import { state } from "./js/state.js";
 import { analyzeImage } from "./js/api.js";
 import { renderCurrentMode } from "./js/render.js";
-import { dismissDisclaimerModal, insertPrintNotes, removePrintNotes, showLimitBanner } from "./js/ui.js";
+import {
+  dismissDisclaimerModal,
+  insertPrintNotes,
+  removePrintNotes,
+  showLimitBanner,
+  showMaintenanceModal,
+} from "./js/ui.js";
 import { initDemo } from "./js/demo.js";
 
 /* ── i18n initialisieren (vor allem anderen) ── */
@@ -13,15 +19,22 @@ applyTranslations();
 /* ── Demo-Fotos initialisieren ── */
 initDemo();
 
-/* ── Limit-Check beim Seitenstart ── */
+/* ── Limit- und Maintenance-Check beim Seitenstart ── */
 fetch("/api/stats")
   .then((r) => (r.ok ? r.json() : null))
   .then((data) => {
+    if (data?.maintenance?.enabled) {
+      showMaintenanceModal(data.maintenance.message);
+      return;
+    }
     if (data?.current?.limitActive) {
       showLimitBanner(data.current.retryAfterSeconds || 600);
     }
   })
   .catch(() => {});
+
+/* Maintenance-Modal: Seite neu laden */
+elements.maintenanceReload.addEventListener("click", () => location.reload());
 
 /* Leaflet Marker-Icons: Auto-Detection deaktivieren und Pfade für self-hosted Build setzen */
 if (typeof L !== "undefined" && L.Icon && L.Icon.Default) {
