@@ -15,9 +15,14 @@ VERSION=$(date +"%Y%m%d%H%M%S")
 echo "Cache-Busting-Version: ?v=$VERSION"
 
 # Alle HTML-Dateien mit ?v= aktualisieren
-for f in public/index.html public/datenschutz.html public/impressum.html; do
+for f in public/index.html public/datenschutz.html public/impressum.html public/stats.html; do
   if [ -f "$f" ]; then
-    sed -i '' "s/\?v=[0-9]*/\?v=$VERSION/g" "$f"
+    # BUG-009: Cross-platform sed (macOS + Linux)
+    if sed --version >/dev/null 2>&1; then
+      sed -i "s/\?v=[0-9]*/\?v=$VERSION/g" "$f"
+    else
+      sed -i '' "s/\?v=[0-9]*/\?v=$VERSION/g" "$f"
+    fi
     echo "  $f aktualisiert"
   fi
 done
