@@ -1,6 +1,38 @@
 /* Tests for auth.js — HMAC-based admin tokens */
 
-const { createAdminToken, verifyAdminToken, createNonce, verifyNonce, NONCE_TTL_MS } = require("../auth");
+const mockCreate = jest.fn().mockResolvedValue();
+const mockDelete = jest.fn();
+const mockCommit = jest.fn().mockResolvedValue();
+const mockGet = jest.fn().mockResolvedValue({ empty: true, docs: [] });
+jest.mock("firebase-admin/firestore", () => ({
+  getFirestore: jest.fn(() => ({
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({ create: mockCreate })),
+      where: jest.fn(() => ({
+        limit: jest.fn(() => ({
+          get: mockGet,
+        })),
+      })),
+    })),
+    batch: jest.fn(() => ({ delete: mockDelete, commit: mockCommit })),
+  })),
+}));
+
+const {
+  createAdminToken,
+  verifyAdminToken,
+  createNonce,
+  verifyNonce,
+  consumeNonce,
+  cleanupNonces,
+  NONCE_TTL_MS,
+} = require("../auth");
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockCreate.mockResolvedValue();
+  mockGet.mockResolvedValue({ empty: true, docs: [] });
+});
 
 describe("createAdminToken", () => {
   test("returns token in format expires.signature", () => {
@@ -107,5 +139,40 @@ describe("createNonce / verifyNonce", () => {
   test("rejects nonce with wrong secret", () => {
     const nonce = createNonce("boost", SECRET);
     expect(verifyNonce(nonce, "boost", "wrong")).toBe(false);
+  });
+});
+
+/* ── SEC-002: Nonce-Replay-Schutz ── */
+
+describe("consumeNonce", () => {
+  test("returns true on first use", async () => {
+    expect(await consumeNonce("nonce-abc")).toBe(true);
+    expect(mockCreate).toHaveBeenCalled();
+  });
+
+  test("returns false on replay (ALREADY_EXISTS)", async () => {
+    mockCreate.mockRejectedValue({ code: 6 });
+    expect(await consumeNonce("nonce-abc")).toBe(false);
+  });
+
+  test("fails open on Firestore error", async () => {
+    mockCreate.mockRejectedValue(new Error("DB down"));
+    expect(await consumeNonce("nonce-abc")).toBe(true);
+  });
+});
+
+describe("cleanupNonces", () => {
+  test("does nothing when no expired nonces", async () => {
+    mockGet.mockResolvedValue({ empty: true, docs: [] });
+    await cleanupNonces();
+    expect(mockCommit).not.toHaveBeenCalled();
+  });
+
+  test("deletes expired nonces in batch", async () => {
+    const mockRef = { id: "abc" };
+    mockGet.mockResolvedValue({ empty: false, docs: [{ ref: mockRef }] });
+    await cleanupNonces();
+    expect(mockDelete).toHaveBeenCalledWith(mockRef);
+    expect(mockCommit).toHaveBeenCalled();
   });
 });

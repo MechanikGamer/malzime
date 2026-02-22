@@ -54,4 +54,46 @@ function verifyNonce(nonce, action, secret) {
   return verifyAdminToken(nonce, action, secret);
 }
 
-module.exports = { createAdminToken, verifyAdminToken, createNonce, verifyNonce, DEFAULT_TTL_MS, NONCE_TTL_MS };
+/**
+ * SEC-002: Nonce-Replay-Schutz via Firestore.
+ * Speichert benutzte Nonces mit Timestamp. Gibt false zurueck wenn die Nonce
+ * bereits verbraucht wurde. Fail-open bei Firestore-Fehlern.
+ */
+async function consumeNonce(nonce) {
+  const { getFirestore } = require("firebase-admin/firestore");
+  const hash = crypto.createHash("sha256").update(nonce).digest("hex").slice(0, 16);
+  const ref = getFirestore().collection("usedNonces").doc(hash);
+  try {
+    await ref.create({ usedAt: Date.now() });
+    return true;
+  } catch (err) {
+    if (err.code === 6) return false; // ALREADY_EXISTS
+    console.log(JSON.stringify({ warning: "nonce-store-error", error: err.message }));
+    return true; // fail-open
+  }
+}
+
+/**
+ * Loescht abgelaufene Nonces (aelter als NONCE_TTL_MS).
+ * Fire-and-forget, max 50 pro Aufruf.
+ */
+async function cleanupNonces() {
+  const { getFirestore } = require("firebase-admin/firestore");
+  const cutoff = Date.now() - NONCE_TTL_MS;
+  const snapshot = await getFirestore().collection("usedNonces").where("usedAt", "<", cutoff).limit(50).get();
+  if (snapshot.empty) return;
+  const batch = getFirestore().batch();
+  snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+  await batch.commit();
+}
+
+module.exports = {
+  createAdminToken,
+  verifyAdminToken,
+  createNonce,
+  verifyNonce,
+  consumeNonce,
+  cleanupNonces,
+  DEFAULT_TTL_MS,
+  NONCE_TTL_MS,
+};

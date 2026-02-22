@@ -4,6 +4,24 @@ jest.mock("firebase-admin/app", () => ({
   initializeApp: jest.fn(),
 }));
 
+const mockCreate = jest.fn().mockResolvedValue();
+const mockDelete = jest.fn();
+const mockCommit = jest.fn().mockResolvedValue();
+jest.mock("firebase-admin/firestore", () => ({
+  getFirestore: jest.fn(() => ({
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({ create: mockCreate })),
+      where: jest.fn(() => ({
+        limit: jest.fn(() => ({
+          get: jest.fn().mockResolvedValue({ empty: true, docs: [] }),
+        })),
+      })),
+    })),
+    batch: jest.fn(() => ({ delete: mockDelete, commit: mockCommit })),
+  })),
+  FieldValue: { serverTimestamp: jest.fn() },
+}));
+
 const TEST_SECRET = "test-admin-secret-xyz";
 
 jest.mock("firebase-functions/params", () => ({
@@ -98,6 +116,7 @@ function mockRes() {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockCreate.mockResolvedValue();
   mockBoostLimit.mockResolvedValue();
   mockResetCounter.mockResolvedValue();
   mockGetStats.mockResolvedValue({
@@ -404,5 +423,28 @@ describe("admin handler", () => {
     await admin(req, res);
     expect(res.body.ok).toBe(true);
     expect(res.body.action).toBe("reset");
+  });
+
+  /* ── SEC-002: Nonce-Replay-Schutz ── */
+
+  test("replayed nonce returns 403 (SEC-002)", async () => {
+    mockCreate.mockRejectedValue({ code: 6 }); // ALREADY_EXISTS
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.body.error).toBe("Nonce already used");
+    expect(mockBoostLimit).not.toHaveBeenCalled();
+  });
+
+  test("nonce consumption Firestore error fails open (SEC-002)", async () => {
+    mockCreate.mockRejectedValue(new Error("Firestore unavailable"));
+    const nonce = createNonce("boost", TEST_SECRET);
+    const req = mockReq({ path: "/boost", method: "POST", body: { nonce } });
+    const res = mockRes();
+    await admin(req, res);
+    expect(mockBoostLimit).toHaveBeenCalledWith(100);
+    expect(res.type).toHaveBeenCalledWith("html");
   });
 });

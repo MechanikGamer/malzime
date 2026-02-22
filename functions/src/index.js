@@ -13,7 +13,7 @@ const { classifyLabels, buildAnimalProfiles, AGE_LABELS } = require("./animal");
 const { resolveLanguage, loadPrompts } = require("./i18n");
 const { checkAndIncrement, incrementTotals, getStats, boostLimit, resetCounter } = require("./counter");
 const { notifyLimitReached } = require("./notify");
-const { verifyAdminToken, createNonce, verifyNonce } = require("./auth");
+const { verifyAdminToken, createNonce, verifyNonce, consumeNonce, cleanupNonces } = require("./auth");
 
 const adminSecret = defineSecret("ADMIN_SECRET");
 const ntfyUrl = defineSecret("NTFY_URL");
@@ -508,6 +508,19 @@ exports.admin = onRequest(
           res.status(404).json({ error: "Unknown action" });
         }
         return;
+      }
+
+      /* SEC-002: Nonce-Replay-Schutz — jede Nonce nur 1x verwendbar */
+      if (isNonceAuth) {
+        const consumed = await consumeNonce(nonceToken);
+        if (!consumed) {
+          res.status(403).json({ error: "Nonce already used" });
+          return;
+        }
+        /* Alte Nonces aufräumen (fire-and-forget) */
+        cleanupNonces().catch((err) => {
+          console.log(JSON.stringify({ warning: "nonce-cleanup-error", error: err.message }));
+        });
       }
 
       /* Mutation ausfuehren (POST+Bearer oder POST+Nonce) */
