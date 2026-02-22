@@ -982,4 +982,126 @@ describe("analyze handler", () => {
     expect(res.body.meta.mode).toBe("animal");
     expect(res.body.profiles.normal.profileText).toContain("Tier");
   });
+
+  /* ── ARCH-001: Quota error returns blocked.overloaded ── */
+  test("returns blocked.overloaded on Gemini quota error", async () => {
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    mockAnalyzeWithVision.mockResolvedValue({
+      labels: ["Person"],
+      landmarks: [],
+      ocrText: "",
+      ocrTextRaw: "",
+      faces: [],
+      objects: [],
+    });
+    mockIsQuotaError.mockReturnValue(true);
+    mockDescribeImage.mockRejectedValue(new Error("429 quota exceeded"));
+    mockBuildDescriptionFromLabels.mockReturnValue(null);
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.body.blockedReason).toBe("blocked.overloaded");
+  });
+
+  /* ── ARCH-001: incrementTotals error does not break response ── */
+  test("incrementTotals error does not break successful response", async () => {
+    mockIncrementTotals.mockRejectedValue(new Error("DB down"));
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    mockAnalyzeWithVision.mockResolvedValue({
+      labels: ["Person"],
+      landmarks: [],
+      ocrText: "",
+      ocrTextRaw: "",
+      faces: [],
+      objects: [],
+    });
+    mockDescribeImage.mockResolvedValue("A person");
+    mockGenerateBothProfiles.mockResolvedValue({
+      normal: {
+        categories: { a: { label: "A", value: "v", confidence: 0.5 } },
+        ad_targeting: [],
+        manipulation_triggers: [],
+        profileText: "",
+      },
+      boost: null,
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.body.meta.mode).toBe("multimodal");
+    expect(res.body.profiles.normal.categories).toBeDefined();
+  });
+
+  /* ── ARCH-001: Both profiles returned correctly ── */
+  test("returns both normal and boost profiles when generated", async () => {
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+    mockAnalyzeWithVision.mockResolvedValue({
+      labels: ["Person"],
+      landmarks: [],
+      ocrText: "",
+      ocrTextRaw: "",
+      faces: [],
+      objects: [],
+    });
+    mockDescribeImage.mockResolvedValue("A confident person");
+    mockGenerateBothProfiles.mockResolvedValue({
+      normal: {
+        categories: { alter: { label: "Alter", value: "30-35", confidence: 0.8 } },
+        ad_targeting: ["Fitness"],
+        manipulation_triggers: ["FOMO"],
+        profileText: "Normales Profil",
+      },
+      boost: {
+        categories: { alter: { label: "Alter", value: "30-35", confidence: 0.9 } },
+        ad_targeting: ["Luxury"],
+        manipulation_triggers: ["Status"],
+        profileText: "Beast Mode Profil",
+      },
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.body.profiles.normal.profileText).toBe("Normales Profil");
+    expect(res.body.profiles.boost.profileText).toBe("Beast Mode Profil");
+    expect(res.body.profiles.normal.ad_targeting).toEqual(["Fitness"]);
+    expect(res.body.profiles.boost.ad_targeting).toEqual(["Luxury"]);
+  });
+
+  /* ── ARCH-002: ntfy notify error does not break 429 response ── */
+  test("ntfy notification error does not prevent 429 response", async () => {
+    mockNotifyLimitReached.mockRejectedValue(new Error("ntfy down"));
+    mockCheckAndIncrement.mockResolvedValue({
+      allowed: false,
+      count: 500,
+      limit: 500,
+      retryAfterSeconds: 600,
+      justReached: true,
+    });
+    mockParseJsonBody.mockReturnValue({
+      imageBase64: VALID_JPEG_B64,
+      mimeType: "image/jpeg",
+    });
+
+    const req = mockReq();
+    const res = mockRes();
+    await analyze(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(429);
+    expect(res.body.blocked).toBe("limit");
+  });
 });

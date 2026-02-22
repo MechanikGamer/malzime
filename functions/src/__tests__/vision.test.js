@@ -170,6 +170,40 @@ describe("analyzeWithVision", () => {
     expect(result.labels).toEqual(["Dog", "Cat"]);
   });
 
+  /* BUG-005: OCR-Text wird auf 10k Zeichen begrenzt */
+  test("truncates OCR text to 10000 characters", async () => {
+    const longText = "A".repeat(20000);
+    mockAnnotateImage.mockResolvedValue([
+      {
+        labelAnnotations: [],
+        textAnnotations: [{ description: longText }],
+        landmarkAnnotations: [],
+      },
+    ]);
+
+    const result = await analyzeWithVision(fakeBuffer);
+    expect(result.ocrText.length).toBe(10000);
+    expect(result.ocrTextRaw.length).toBe(20000);
+  });
+
+  test("respects budget timeout when shorter than API_TIMEOUT_MS", async () => {
+    jest.useFakeTimers();
+    mockAnnotateImage.mockImplementation(() => new Promise(() => {}));
+
+    const promise = analyzeWithVision(fakeBuffer, 2000);
+    jest.advanceTimersByTime(2000);
+
+    const result = await promise;
+    expect(result.labels).toEqual([]);
+    jest.useRealTimers();
+  });
+
+  test("returns empty result when budget is 0", async () => {
+    const result = await analyzeWithVision(fakeBuffer, 0);
+    expect(result.labels).toEqual([]);
+    expect(mockAnnotateImage).not.toHaveBeenCalled();
+  });
+
   test("returns fallback when Vision API times out", async () => {
     jest.useFakeTimers();
 

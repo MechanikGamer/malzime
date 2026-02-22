@@ -139,4 +139,59 @@ describe("Render helpers", () => {
       expect(elements.dataValue.innerHTML).toBe("");
     });
   });
+
+  /* ── ARCH-002: Edge cases ── */
+
+  describe("Empty profile fields", () => {
+    it("renders profile with empty ad_targeting and manipulation_triggers", async () => {
+      const { renderCurrentMode } = await import("../js/render.js");
+
+      const mockData = {
+        profiles: {
+          normal: {
+            categories: { alter: { label: "Alter", value: "30", confidence: 0.7 } },
+            ad_targeting: [],
+            manipulation_triggers: [],
+            profileText: "",
+          },
+          boost: null,
+        },
+        privacyRisks: [],
+        exif: {},
+        meta: { requestId: "test", mode: "multimodal" },
+      };
+
+      renderCurrentMode(mockData);
+      expect(elements.facts.innerHTML).toContain("Alter");
+      expect(elements.facts.innerHTML).toContain("30");
+    });
+
+    it("renders profile with multiple categories correctly", async () => {
+      const { renderCurrentMode } = await import("../js/render.js");
+
+      const mockData = {
+        profiles: {
+          normal: {
+            categories: {
+              alter: { label: "Alter", value: "25-30", confidence: 0.8 },
+              beruf: { label: "Beruf", value: "Designer", confidence: 0.6 },
+              stil: { label: "Stil", value: "Sportlich", confidence: 0.9 },
+            },
+            ad_targeting: ["Mode", "Sport"],
+            manipulation_triggers: ["FOMO"],
+            profileText: "Ein aktiver Mensch.",
+          },
+          boost: null,
+        },
+        privacyRisks: [],
+        exif: {},
+        meta: { requestId: "test", mode: "multimodal" },
+      };
+
+      renderCurrentMode(mockData);
+      expect(elements.facts.innerHTML).toContain("Designer");
+      expect(elements.facts.innerHTML).toContain("Sportlich");
+      expect(elements.simulation.innerHTML).toContain("Ein aktiver Mensch.");
+    });
+  });
 });

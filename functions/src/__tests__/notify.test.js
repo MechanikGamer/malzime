@@ -98,6 +98,33 @@ describe("notifyLimitReached", () => {
     expect(fetchSpy).not.toHaveBeenCalled();
   });
 
+  test("logs warning on non-ok response", async () => {
+    fetchSpy.mockResolvedValue({ ok: false, status: 502, text: jest.fn().mockResolvedValue("Bad Gateway") });
+    const logSpy = jest.spyOn(console, "log").mockImplementation();
+    await notifyLimitReached({
+      ntfyUrl: "https://ntfy.example.com",
+      ntfyTopic: "topic",
+      adminSecret: "secret",
+      count: 500,
+      limit: 500,
+    });
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("ntfy-failed"));
+    logSpy.mockRestore();
+  });
+
+  test("includes AbortSignal in fetch request (BUG-003)", async () => {
+    await notifyLimitReached({
+      ntfyUrl: "https://ntfy.example.com",
+      ntfyTopic: "topic",
+      adminSecret: "secret",
+      count: 500,
+      limit: 500,
+    });
+    const opts = fetchSpy.mock.calls[0][1];
+    expect(opts.signal).toBeDefined();
+    expect(typeof opts.signal.aborted).toBe("boolean");
+  });
+
   test("does not throw on fetch error", async () => {
     fetchSpy.mockRejectedValue(new Error("network error"));
     await expect(
