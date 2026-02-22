@@ -1,5 +1,5 @@
 const { createAdminToken } = require("./auth");
-const { ALLOWED_ORIGINS } = require("./domains");
+const { SITE_URL } = require("./domains");
 
 /**
  * Sendet eine Push-Benachrichtigung über ntfy wenn das Stundenlimit erreicht wird.
@@ -8,7 +8,7 @@ const { ALLOWED_ORIGINS } = require("./domains");
 async function notifyLimitReached({ ntfyUrl, ntfyTopic, adminSecret, count, limit }) {
   if (!ntfyUrl || !ntfyTopic) return;
 
-  const baseUrl = ALLOWED_ORIGINS[0];
+  const baseUrl = SITE_URL;
 
   /* BUG-003: Timeout verhindert dass ein haengender ntfy-Server die Cloud Function blockiert */
   const controller = new AbortController();

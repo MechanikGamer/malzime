@@ -54,6 +54,21 @@ jobs:
       - run: npm run format:frontend:check
       - run: npm run test:frontend
 
+  test-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+
   lighthouse:
     runs-on: ubuntu-latest
     steps:

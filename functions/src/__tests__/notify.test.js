@@ -85,11 +85,11 @@ describe("notifyLimitReached", () => {
       limit: 500,
     });
 
-    const { ALLOWED_ORIGINS } = require("../domains");
+    const { SITE_URL } = require("../domains");
     const body = JSON.parse(fetchSpy.mock.calls[0][1].body);
-    expect(body.actions[0].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    expect(body.actions[1].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-    expect(body.actions[2].url).toMatch(new RegExp("^" + ALLOWED_ORIGINS[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(body.actions[0].url).toMatch(new RegExp("^" + SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(body.actions[1].url).toMatch(new RegExp("^" + SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    expect(body.actions[2].url).toMatch(new RegExp("^" + SITE_URL.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   });
 
   test("does nothing when ntfyUrl is empty", async () => {

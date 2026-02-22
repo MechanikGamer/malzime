@@ -6,7 +6,7 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ## [1.2.5] — 2026-02-22
 
-Accessibility-Verbesserungen und Backend-Cleanup.
+Accessibility-Verbesserungen, Hardening und Test-Ausbau.
 
 ### Accessibility
 
@@ -19,13 +19,20 @@ Accessibility-Verbesserungen und Backend-Cleanup.
 
 - **Timeout-Cleanup gemini.js**: `clearTimeout` wird jetzt per `try/finally` um `Promise.race` in `describeImageWithModel()` immer ausgefuehrt — auch wenn die API-Promise rejectet. Behebt einen Timer-Leak bei Fehlerantworten
 
+### Hardening
+
+- **SITE_URL statt ALLOWED_ORIGINS[0]**: ntfy-Admin-Links verwenden jetzt eine eigene `SITE_URL`-Konstante statt der ordnungsabhaengigen ersten CORS-Origin
+- **E2E-Tests in CI**: Playwright Smoke-Tests laufen jetzt im GitHub Actions Workflow (neuer `test-e2e` Job)
+- **test-results/ in .gitignore**: Playwright-Artefakte verschmutzen nicht mehr den Worktree
+
 ### Tests
 
 - **E2E Smoke-Tests (Playwright)**: 2 Smoke-Tests — Demo-Flow (Seite laden → Demo-Klick → Disclaimer → Profil gerendert) und fehlerfreies Laden. API-Calls gemockt
 - **Testtiefe upload.js erweitert**: 7 neue Edge-Case-Tests (Multipart-Parsing, Charset-Varianten, Request-Abort, leere Datei)
 - **Testtiefe gemini.js erweitert**: 13 neue Integration-Tests mit gemocktem Vertex AI (describeImage Fallback/Quota, generateBothProfiles Schema-Validierung/Markdown/Truncation, isQuotaError)
 - **Testtiefe ui.js erweitert**: 11 neue Tests (role="alert" a11y, srAnnounce Start/Ende, Limit-Banner, Maintenance-Modal)
-- **Testabdeckung**: 251 Backend + 139 Frontend + 2 E2E = 392 Tests
+- **Testtiefe handle-stats.js**: 5 neue Tests (405 bei POST, 503 bei Ausfall, Maintenance-Flag)
+- **Testabdeckung**: 256 Backend + 139 Frontend + 2 E2E = 397 Tests
 
 ## [1.2.4] — 2026-02-22
 
