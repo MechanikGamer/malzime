@@ -1,7 +1,41 @@
-const { buildDescriptionFromLabels, buildPrompt, escapeXml } = require("../gemini");
+const { buildDescriptionFromLabels, buildPrompt, escapeXml, isQuotaError } = require("../gemini");
 
-// We only test the pure functions from gemini.js here.
-// describeImage and generateBothProfiles depend on Vertex AI and are integration-tested.
+/* ── isQuotaError ── */
+
+describe("isQuotaError", () => {
+  test("detects 'resource exhausted' message", () => {
+    expect(isQuotaError(new Error("Resource has been exhausted"))).toBe(true);
+  });
+
+  test("detects 'quota' message", () => {
+    expect(isQuotaError(new Error("Quota exceeded for project"))).toBe(true);
+  });
+
+  test("detects '429' message", () => {
+    expect(isQuotaError(new Error("429 too many requests"))).toBe(true);
+  });
+
+  test("detects 'too many requests' message", () => {
+    expect(isQuotaError(new Error("Too Many Requests"))).toBe(true);
+  });
+
+  test("detects error code 8", () => {
+    const err = new Error("generic");
+    err.code = 8;
+    expect(isQuotaError(err)).toBe(true);
+  });
+
+  test("returns false for non-quota errors", () => {
+    expect(isQuotaError(new Error("Network timeout"))).toBe(false);
+    expect(isQuotaError(new Error("Internal server error"))).toBe(false);
+  });
+
+  test("handles error without message", () => {
+    expect(isQuotaError(new Error())).toBe(false);
+  });
+});
+
+/* ── buildDescriptionFromLabels ── */
 
 describe("buildDescriptionFromLabels", () => {
   test("builds description from labels only", () => {
@@ -92,7 +126,6 @@ describe("buildDescriptionFromLabels", () => {
     const exif = { make: "Sony", model: "A7III" };
     const result = buildDescriptionFromLabels(vision, exif);
 
-    // All parts should be present
     expect(result).toContain("Im Bild erkannte Elemente: Person, Dog.");
     expect(result).toContain("Erkannte Objekte: Ball.");
     expect(result).toContain("Erkannte Gesichter (1)");
@@ -124,6 +157,8 @@ describe("buildDescriptionFromLabels", () => {
     expect(result).not.toContain("Kopfbedeckung");
   });
 });
+
+/* ── buildPrompt ── */
 
 describe("buildPrompt", () => {
   const mockPrompts = {
@@ -193,5 +228,214 @@ describe("escapeXml", () => {
   test("converts non-strings to string", () => {
     expect(escapeXml(42)).toBe("42");
     expect(escapeXml(null)).toBe("null");
+  });
+});
+
+/* ── describeImage + generateBothProfiles (mit gemocktem Vertex AI) ── */
+
+describe("describeImage (mocked Vertex AI)", () => {
+  let describeImage;
+  let mockGenerateContent;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    mockGenerateContent = jest.fn();
+    jest.doMock("@google-cloud/vertexai", () => ({
+      VertexAI: jest.fn(() => ({
+        getGenerativeModel: jest.fn(() => ({
+          generateContent: mockGenerateContent,
+        })),
+      })),
+      HarmCategory: {
+        HARM_CATEGORY_HATE_SPEECH: "H1",
+        HARM_CATEGORY_DANGEROUS_CONTENT: "H2",
+        HARM_CATEGORY_HARASSMENT: "H3",
+        HARM_CATEGORY_SEXUALLY_EXPLICIT: "H4",
+      },
+      HarmBlockThreshold: { BLOCK_NONE: "NONE" },
+    }));
+
+    const gemini = require("../gemini");
+    describeImage = gemini.describeImage;
+  });
+
+  function makeResponse(text, finishReason = "STOP") {
+    return {
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text }] },
+            finishReason,
+          },
+        ],
+      },
+    };
+  }
+
+  test("returns description on first model success", async () => {
+    mockGenerateContent.mockResolvedValueOnce(makeResponse("A person in a park"));
+    const result = await describeImage(Buffer.from("fake"), "image/jpeg");
+    expect(result).toBe("A person in a park");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(1);
+  });
+
+  test("falls through to next model on empty response", async () => {
+    mockGenerateContent.mockResolvedValueOnce(makeResponse("", "SAFETY"));
+    mockGenerateContent.mockResolvedValueOnce(makeResponse("Fallback description"));
+    const result = await describeImage(Buffer.from("fake"), "image/jpeg");
+    expect(result).toBe("Fallback description");
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+  });
+
+  test("tries fallback prompt when all primary models fail", async () => {
+    /* 2 primary models fail (empty) */
+    mockGenerateContent.mockResolvedValueOnce(makeResponse(""));
+    mockGenerateContent.mockResolvedValueOnce(makeResponse(""));
+    /* First fallback model succeeds */
+    mockGenerateContent.mockResolvedValueOnce(makeResponse("Neutral fallback"));
+    const result = await describeImage(Buffer.from("fake"), "image/jpeg");
+    expect(result).toBe("Neutral fallback");
+  });
+
+  test("returns null when all models and fallbacks fail", async () => {
+    mockGenerateContent.mockResolvedValue(makeResponse(""));
+    const result = await describeImage(Buffer.from("fake"), "image/jpeg");
+    expect(result).toBeNull();
+  });
+
+  test("throws quota error when all models hit quota", async () => {
+    mockGenerateContent.mockRejectedValue(new Error("429 quota exceeded"));
+    await expect(describeImage(Buffer.from("fake"), "image/jpeg")).rejects.toMatchObject({
+      code: "quota_exceeded",
+    });
+  });
+
+  test("skips models when remainingBudget returns 0", async () => {
+    const result = await describeImage(Buffer.from("fake"), "image/jpeg", () => 0);
+    expect(result).toBeNull();
+    expect(mockGenerateContent).not.toHaveBeenCalled();
+  });
+});
+
+describe("generateBothProfiles (mocked Vertex AI)", () => {
+  let generateBothProfiles;
+  let mockGenerateContent;
+
+  beforeEach(() => {
+    jest.resetModules();
+
+    mockGenerateContent = jest.fn();
+    jest.doMock("@google-cloud/vertexai", () => ({
+      VertexAI: jest.fn(() => ({
+        getGenerativeModel: jest.fn(() => ({
+          generateContent: mockGenerateContent,
+        })),
+      })),
+      HarmCategory: {
+        HARM_CATEGORY_HATE_SPEECH: "H1",
+        HARM_CATEGORY_DANGEROUS_CONTENT: "H2",
+        HARM_CATEGORY_HARASSMENT: "H3",
+        HARM_CATEGORY_SEXUALLY_EXPLICIT: "H4",
+      },
+      HarmBlockThreshold: { BLOCK_NONE: "NONE" },
+    }));
+
+    const gemini = require("../gemini");
+    generateBothProfiles = gemini.generateBothProfiles;
+  });
+
+  const validProfile = {
+    categories: { alter: { label: "Alter", value: "25-30", confidence: 0.8 } },
+    ad_targeting: ["Outdoor-Werbung"],
+    manipulation_triggers: ["FOMO"],
+    profileText: "Testprofil",
+  };
+
+  function makeProfileResponse(profile) {
+    return {
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: JSON.stringify(profile) }] },
+            finishReason: "STOP",
+          },
+        ],
+      },
+    };
+  }
+
+  test("returns both profiles on success", async () => {
+    mockGenerateContent.mockResolvedValue(makeProfileResponse(validProfile));
+    const result = await generateBothProfiles("A person", ["Person"], {}, []);
+    expect(result.normal).not.toBeNull();
+    expect(result.boost).not.toBeNull();
+    expect(result.normal.categories.alter.label).toBe("Alter");
+    expect(result.normal.ad_targeting).toEqual(["Outdoor-Werbung"]);
+  });
+
+  test("handles JSON wrapped in markdown code blocks", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: "```json\n" + JSON.stringify(validProfile) + "\n```" }] },
+            finishReason: "STOP",
+          },
+        ],
+      },
+    });
+    const result = await generateBothProfiles("A person", [], {}, []);
+    expect(result.normal).not.toBeNull();
+    expect(result.normal.profileText).toBe("Testprofil");
+  });
+
+  test("returns null for invalid JSON response", async () => {
+    mockGenerateContent.mockResolvedValue({
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: "This is not JSON at all" }] },
+            finishReason: "STOP",
+          },
+        ],
+      },
+    });
+    const result = await generateBothProfiles("A person", [], {}, []);
+    expect(result.normal).toBeNull();
+    expect(result.boost).toBeNull();
+  });
+
+  test("validates schema — rejects profile without categories", async () => {
+    mockGenerateContent.mockResolvedValue(
+      makeProfileResponse({ ad_targeting: [], manipulation_triggers: [], profileText: "x" })
+    );
+    const result = await generateBothProfiles("A person", [], {}, []);
+    expect(result.normal).toBeNull();
+  });
+
+  test("bounds confidence to 0-1 range", async () => {
+    const profile = {
+      ...validProfile,
+      categories: { test: { label: "Test", value: "x", confidence: 5.0 } },
+    };
+    mockGenerateContent.mockResolvedValue(makeProfileResponse(profile));
+    const result = await generateBothProfiles("A person", [], {}, []);
+    expect(result.normal.categories.test.confidence).toBe(1);
+  });
+
+  test("truncates profileText to 2000 chars", async () => {
+    const profile = { ...validProfile, profileText: "x".repeat(3000) };
+    mockGenerateContent.mockResolvedValue(makeProfileResponse(profile));
+    const result = await generateBothProfiles("A person", [], {}, []);
+    expect(result.normal.profileText.length).toBe(2000);
+  });
+
+  test("strips dateTimeOriginal from EXIF before building prompt", async () => {
+    mockGenerateContent.mockResolvedValue(makeProfileResponse(validProfile));
+    await generateBothProfiles("A person", [], { make: "Canon", dateTimeOriginal: "2024:01:01" }, []);
+    const promptUsed = mockGenerateContent.mock.calls[0][0].contents[0].parts[0].text;
+    expect(promptUsed).not.toContain("dateTimeOriginal");
+    expect(promptUsed).not.toContain("2024:01:01");
   });
 });

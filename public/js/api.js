@@ -173,6 +173,10 @@ export async function analyzeImage() {
       renderCurrentMode(data);
       setStatus("");
       window.scrollTo({ top: 0, behavior: "smooth" });
+      /* A11y: Focus auf Ergebnisse setzen nachdem Modal geschlossen */
+      setTimeout(() => {
+        if (elements.resultsPanel) elements.resultsPanel.focus({ preventScroll: true });
+      }, 300);
     });
   } catch (err) {
     /* BUG-002: Stale catch darf UI des neuen Laufs nicht überschreiben */

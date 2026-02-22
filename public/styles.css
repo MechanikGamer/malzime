@@ -1922,6 +1922,18 @@ h1 {
   top: 0;
 }
 
+/* A11y: Nur fuer Screenreader sichtbar (opacity statt clip fuer Safari/VoiceOver) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* ── Utility-Klassen (Ersatz fuer Inline-Styles → CSP-konform) ── */
 
 .disclaimer--flush { margin-top: 0; margin-bottom: 28px; }

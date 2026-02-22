@@ -9,10 +9,13 @@ export function setStatus(text) {
   if (!text) {
     elements.status.textContent = "";
     elements.status.classList.remove("visible");
+    elements.status.removeAttribute("role");
     return;
   }
   elements.status.textContent = text;
   elements.status.classList.add("visible");
+  /* A11y: Fehlermeldungen als role="alert" fuer robuste Screenreader-Ankuendigung */
+  elements.status.setAttribute("role", "alert");
 }
 
 export function getBiasMode() {
@@ -22,6 +25,8 @@ export function getBiasMode() {
 export function startScanAnim() {
   stopScanAnim(); /* BUG-009: alten Intervall aufräumen bevor neuer startet */
   elements.scanAnim.classList.add("active");
+  /* A11y: Screenreader-Ankuendigung */
+  if (elements.srAnnounce) elements.srAnnounce.textContent = t("scan.srStart");
   let idx = 0;
   const messages = t("scan.messages");
   const shuffled = [...(Array.isArray(messages) ? messages : [])].sort(() => Math.random() - 0.5);
@@ -44,6 +49,8 @@ export function stopScanAnim() {
     clearInterval(scanInterval);
     scanInterval = null;
   }
+  /* A11y: Screenreader-Ankuendigung */
+  if (elements.srAnnounce) elements.srAnnounce.textContent = t("scan.srEnd");
 }
 
 /* ── Disclaimer-Modal ── */

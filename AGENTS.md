@@ -57,8 +57,9 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (222 tests)
-- `npm run test:frontend` — run Vitest frontend unit tests (128 tests)
+- `cd functions && npm test` — run Jest backend unit tests (251 tests)
+- `npm run test:frontend` — run Vitest frontend unit tests (139 tests)
+- `npm run test:e2e` — run Playwright E2E smoke tests (2 tests)
 - `cd functions && npm run lint` — ESLint backend
 - `cd functions && npm run format:check` — Prettier backend
 - `npm run lint:frontend` — ESLint frontend

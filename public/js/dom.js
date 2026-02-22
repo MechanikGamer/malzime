@@ -20,6 +20,8 @@ export const elements = {
   maintenanceModal: document.getElementById("maintenanceModal"),
   maintenanceMessage: document.getElementById("maintenanceMessage"),
   maintenanceReload: document.getElementById("maintenanceReload"),
+  resultsPanel: document.getElementById("resultsPanel"),
+  srAnnounce: document.getElementById("srAnnounce"),
 };
 
 export function escapeHtml(str) {

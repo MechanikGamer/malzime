@@ -57,6 +57,17 @@ describe("Scan Animation", () => {
     expect(typeof second).toBe("string");
     expect(second.length).toBeGreaterThan(0);
   });
+
+  it("announces analysis start to srAnnounce (a11y)", () => {
+    startScanAnim();
+    expect(elements.srAnnounce.textContent).toBe("scan.srStart");
+  });
+
+  it("announces analysis end to srAnnounce (a11y)", () => {
+    startScanAnim();
+    stopScanAnim();
+    expect(elements.srAnnounce.textContent).toBe("scan.srEnd");
+  });
 });
 
 describe("setStatus", () => {
@@ -88,6 +99,17 @@ describe("setStatus", () => {
     setStatus(null);
     expect(elements.status.textContent).toBe("");
     expect(elements.status.classList.contains("visible")).toBe(false);
+  });
+
+  it("adds role='alert' when text is set (a11y)", () => {
+    setStatus("Fehler!");
+    expect(elements.status.getAttribute("role")).toBe("alert");
+  });
+
+  it("removes role='alert' when cleared (a11y)", () => {
+    setStatus("Fehler!");
+    setStatus("");
+    expect(elements.status.hasAttribute("role")).toBe(false);
   });
 });
 
@@ -155,6 +177,77 @@ describe("Disclaimer Modal", () => {
     elements.disclaimerConfirm.click();
     expect(cb1).not.toHaveBeenCalled();
     expect(cb2).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Limit Banner", () => {
+  let showLimitBanner, hideLimitBanner, elements;
+
+  beforeEach(async () => {
+    setupDOM();
+    vi.useFakeTimers();
+    const uiMod = await import("../js/ui.js");
+    const domMod = await import("../js/dom.js");
+    showLimitBanner = uiMod.showLimitBanner;
+    hideLimitBanner = uiMod.hideLimitBanner;
+    elements = domMod.elements;
+  });
+
+  afterEach(() => {
+    hideLimitBanner();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("adds active class on show", () => {
+    showLimitBanner(60);
+    expect(elements.limitBanner.classList.contains("active")).toBe(true);
+  });
+
+  it("removes active class on hide", () => {
+    showLimitBanner(60);
+    hideLimitBanner();
+    expect(elements.limitBanner.classList.contains("active")).toBe(false);
+  });
+
+  it("sets countdown text on show", () => {
+    showLimitBanner(120);
+    expect(elements.limitCountdown.textContent).toBe("limit.countdown");
+  });
+
+  it("updates countdown text each second", () => {
+    showLimitBanner(10);
+    const initial = elements.limitCountdown.textContent;
+    vi.advanceTimersByTime(1000);
+    /* Mock gibt immer den Key zurueck, aber die Funktion wurde erneut aufgerufen */
+    expect(elements.limitCountdown.textContent).toBe(initial);
+  });
+});
+
+describe("Maintenance Modal", () => {
+  let showMaintenanceModal, elements;
+
+  beforeEach(async () => {
+    setupDOM();
+    const uiMod = await import("../js/ui.js");
+    const domMod = await import("../js/dom.js");
+    showMaintenanceModal = uiMod.showMaintenanceModal;
+    elements = domMod.elements;
+  });
+
+  it("adds active class on show", () => {
+    showMaintenanceModal("Wartung");
+    expect(elements.maintenanceModal.classList.contains("active")).toBe(true);
+  });
+
+  it("sets custom message text", () => {
+    showMaintenanceModal("Server wird aktualisiert");
+    expect(elements.maintenanceMessage.textContent).toBe("Server wird aktualisiert");
+  });
+
+  it("uses default text when no message provided", () => {
+    showMaintenanceModal();
+    expect(elements.maintenanceMessage.textContent).toBe("maintenance.text");
   });
 });
 

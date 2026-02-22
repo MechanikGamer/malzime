@@ -8,10 +8,12 @@
     "lint:frontend": "eslint public/js/ public/app.js public/__tests__/",
     "lint:frontend:fix": "eslint public/js/ public/app.js public/__tests__/ --fix",
     "format:frontend": "prettier --write public/js/ public/app.js public/__tests__/",
-    "format:frontend:check": "prettier --check public/js/ public/app.js public/__tests__/"
+    "format:frontend:check": "prettier --check public/js/ public/app.js public/__tests__/",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.58.2",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.0.0",
     "eslint-config-prettier": "^10.1.8",

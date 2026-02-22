@@ -65,8 +65,12 @@ async function describeImageWithModel(vertexAI, modelName, imageBuffer, mimeType
   const timeoutPromise = new Promise((_, reject) => {
     timeoutId = setTimeout(() => reject(new Error("Gemini describe timeout")), effectiveTimeout);
   });
-  const response = await Promise.race([apiPromise, timeoutPromise]);
-  clearTimeout(timeoutId);
+  let response;
+  try {
+    response = await Promise.race([apiPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const candidates = response.response.candidates || [];
   const text = candidates[0]?.content?.parts?.map((p) => p.text).join("") || "";

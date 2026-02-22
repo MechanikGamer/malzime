@@ -18,6 +18,11 @@ const ids = [
   "exportPdf",
   "limitBanner",
   "limitCountdown",
+  "maintenanceModal",
+  "maintenanceMessage",
+  "maintenanceReload",
+  "resultsPanel",
+  "srAnnounce",
 ];
 
 export function setupDOM() {
