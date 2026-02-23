@@ -95,6 +95,37 @@ async function checkAndIncrement() {
 }
 
 /**
+ * Berechnet Datums-Keys in Europe/Vienna (inkl. Sommer-/Winterzeit).
+ * Wird von incrementTotals() und getStats() verwendet.
+ */
+function getDateKeys(now = new Date()) {
+  const viennaDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Vienna",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  const [y, m] = viennaDate.split("-");
+  const todayDate = viennaDate;
+  const monthKey = `${y}-${m}`;
+  const yearKey = y;
+
+  /* Wochenstart (Montag) in Wiener Zeit berechnen */
+  const viennaDay = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Vienna", weekday: "short" }).format(now);
+  const dayMap = { Sun: 6, Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5 };
+  const diff = dayMap[viennaDay] || 0;
+  const mondayMs = now.getTime() - diff * 86400000;
+  const weekStart = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Vienna",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(mondayMs));
+
+  return { todayDate, weekStart, monthKey, yearKey };
+}
+
+/**
  * Erhöht die Gesamt-Statistiken (today/week/month/year/allTime).
  * Wird nach erfolgreicher Analyse aufgerufen.
  */
@@ -103,17 +134,7 @@ async function incrementTotals() {
     const db = getFirestore();
     const ref = db.doc(TOTALS_DOC);
 
-    const now = new Date();
-    const todayDate = now.toISOString().slice(0, 10);
-    const monthKey = now.toISOString().slice(0, 7);
-    const yearKey = String(now.getFullYear());
-
-    /* Wochenstart (Montag) berechnen */
-    const day = now.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - diff);
-    const weekStart = monday.toISOString().slice(0, 10);
+    const { todayDate, weekStart, monthKey, yearKey } = getDateKeys();
 
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
@@ -187,6 +208,10 @@ async function getStats() {
 
     /* BUG-002: Kein Cleanup-Write auf dem Read-Pfad — Cleanup passiert in checkAndIncrement(). */
 
+    /* Live-Reset: Wenn der gespeicherte Datums-Key nicht mehr zum aktuellen
+       Wiener Datum passt, zeigen wir 0 statt den gestrigen/letztwöchigen Wert. */
+    const keys = getDateKeys();
+
     return {
       current: {
         count: recentCount,
@@ -196,10 +221,10 @@ async function getStats() {
         hourlyTotal: recentCount,
       },
       totals: {
-        today: totals.today || 0,
-        week: totals.week || 0,
-        month: totals.month || 0,
-        year: totals.year || 0,
+        today: totals.todayDate === keys.todayDate ? totals.today || 0 : 0,
+        week: totals.weekStart === keys.weekStart ? totals.week || 0 : 0,
+        month: totals.monthKey === keys.monthKey ? totals.month || 0 : 0,
+        year: totals.yearKey === keys.yearKey ? totals.year || 0 : 0,
         allTime: totals.allTime || 0,
       },
     };
@@ -287,4 +312,5 @@ module.exports = {
   _clearMaintenanceCache,
   filterRecent,
   calcRetrySeconds,
+  getDateKeys,
 };

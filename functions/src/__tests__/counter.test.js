@@ -32,6 +32,7 @@ const {
   _clearMaintenanceCache,
   filterRecent,
   calcRetrySeconds,
+  getDateKeys,
 } = require("../counter");
 
 beforeEach(() => {
@@ -41,6 +42,46 @@ beforeEach(() => {
 });
 
 /* ── filterRecent ── */
+
+describe("getDateKeys", () => {
+  test("returns todayDate in YYYY-MM-DD format", () => {
+    const keys = getDateKeys();
+    expect(keys.todayDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test("returns weekStart in YYYY-MM-DD format", () => {
+    const keys = getDateKeys();
+    expect(keys.weekStart).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test("returns monthKey in YYYY-MM format", () => {
+    const keys = getDateKeys();
+    expect(keys.monthKey).toMatch(/^\d{4}-\d{2}$/);
+  });
+
+  test("returns yearKey as 4-digit string", () => {
+    const keys = getDateKeys();
+    expect(keys.yearKey).toMatch(/^\d{4}$/);
+  });
+
+  test("weekStart is a Monday", () => {
+    const keys = getDateKeys();
+    /* Parse the weekStart date and check day of week in Vienna timezone */
+    const [y, m, d] = keys.weekStart.split("-").map(Number);
+    const date = new Date(y, m - 1, d);
+    expect(date.getDay()).toBe(1); /* 1 = Monday */
+  });
+
+  test("uses Vienna timezone (not UTC)", () => {
+    /* At 00:30 UTC on Jan 1, Vienna is already Jan 1 (UTC+1) — same day.
+       At 23:30 UTC on Dec 31, Vienna is already Jan 1 (UTC+1) — different day. */
+    const lateNightUtcDec31 = new Date("2026-12-31T23:30:00Z"); /* Vienna: 2027-01-01 00:30 */
+    const keys = getDateKeys(lateNightUtcDec31);
+    expect(keys.todayDate).toBe("2027-01-01");
+    expect(keys.yearKey).toBe("2027");
+    expect(keys.monthKey).toBe("2027-01");
+  });
+});
 
 describe("filterRecent", () => {
   const WINDOW = 60 * 60 * 1000;
@@ -321,6 +362,23 @@ describe("incrementTotals", () => {
 /* ── getStats ── */
 
 describe("getStats", () => {
+  /* Hilfsfunktion: Totals-Mock mit aktuellen Datums-Keys */
+  function currentTotals(overrides = {}) {
+    const keys = getDateKeys();
+    return {
+      todayDate: keys.todayDate,
+      weekStart: keys.weekStart,
+      monthKey: keys.monthKey,
+      yearKey: keys.yearKey,
+      today: 10,
+      week: 50,
+      month: 200,
+      year: 500,
+      allTime: 1000,
+      ...overrides,
+    };
+  }
+
   test("returns rolling window count as hourlyTotal", async () => {
     const now = Date.now();
     const recentTs = [now - 10 * 60 * 1000, now - 20 * 60 * 1000, now - 90 * 60 * 1000];
@@ -328,9 +386,7 @@ describe("getStats", () => {
       get: jest.fn().mockResolvedValue({
         exists: true,
         data: () =>
-          path === "stats/current"
-            ? { recentAnalyses: recentTs, limit: 1000, windowMinutes: 60 }
-            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+          path === "stats/current" ? { recentAnalyses: recentTs, limit: 1000, windowMinutes: 60 } : currentTotals(),
       }),
     }));
 
@@ -347,9 +403,7 @@ describe("getStats", () => {
       get: jest.fn().mockResolvedValue({
         exists: true,
         data: () =>
-          path === "stats/current"
-            ? { recentAnalyses: [], limit: 500, windowMinutes: 60 }
-            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+          path === "stats/current" ? { recentAnalyses: [], limit: 500, windowMinutes: 60 } : currentTotals(),
       }),
     }));
 
@@ -366,9 +420,7 @@ describe("getStats", () => {
       get: jest.fn().mockResolvedValue({
         exists: true,
         data: () =>
-          path === "stats/current"
-            ? { recentAnalyses: recent, limit: 500, windowMinutes: 60 }
-            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+          path === "stats/current" ? { recentAnalyses: recent, limit: 500, windowMinutes: 60 } : currentTotals(),
       }),
     }));
 
@@ -407,9 +459,7 @@ describe("getStats", () => {
       get: jest.fn().mockResolvedValue({
         exists: true,
         data: () =>
-          path.includes("current")
-            ? { recentAnalyses: staleEntries, limit: 500, windowMinutes: 60 }
-            : { today: 10, week: 50, month: 200, year: 500, allTime: 1000 },
+          path.includes("current") ? { recentAnalyses: staleEntries, limit: 500, windowMinutes: 60 } : currentTotals(),
       }),
       update: mockUpdate,
       set: mockSet,
@@ -418,6 +468,67 @@ describe("getStats", () => {
     await getStats();
     expect(mockUpdate).not.toHaveBeenCalled();
     expect(mockSet).not.toHaveBeenCalled();
+  });
+
+  test("resets today to 0 when todayDate is stale", async () => {
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? { recentAnalyses: [], limit: 500, windowMinutes: 60 }
+            : currentTotals({ todayDate: "2020-01-01", today: 42 }),
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.totals.today).toBe(0);
+    expect(result.totals.allTime).toBe(1000);
+  });
+
+  test("resets week to 0 when weekStart is stale", async () => {
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? { recentAnalyses: [], limit: 500, windowMinutes: 60 }
+            : currentTotals({ weekStart: "2020-01-06", week: 99 }),
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.totals.week).toBe(0);
+  });
+
+  test("resets month to 0 when monthKey is stale", async () => {
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? { recentAnalyses: [], limit: 500, windowMinutes: 60 }
+            : currentTotals({ monthKey: "2020-01", month: 77 }),
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.totals.month).toBe(0);
+  });
+
+  test("resets year to 0 when yearKey is stale", async () => {
+    mockDoc.mockImplementation((path) => ({
+      get: jest.fn().mockResolvedValue({
+        exists: true,
+        data: () =>
+          path === "stats/current"
+            ? { recentAnalyses: [], limit: 500, windowMinutes: 60 }
+            : currentTotals({ yearKey: "2020", year: 55 }),
+      }),
+    }));
+
+    const result = await getStats();
+    expect(result.totals.year).toBe(0);
   });
 });
 
