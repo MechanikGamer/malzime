@@ -102,6 +102,10 @@
         "destination": "/datenschutz.html"
       },
       {
+        "source": "/nutzungsbedingungen",
+        "destination": "/nutzungsbedingungen.html"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
