@@ -4,6 +4,12 @@ Alle relevanten Aenderungen an malziME werden hier dokumentiert.
 
 Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
+## [1.2.9] — 2026-02-27
+
+### Bugfixes
+
+- **Altersschaetzung bei Erwachsenen 25+**: Personen ueber 25 wurden systematisch zu jung geschaetzt. Ursache: Die Beschreibungs-Prompts enthielten nur Entwicklungsmerkmale (Kind vs. Erwachsener) aber keine Alterungsmerkmale (30 vs. 50). Erweitert um: Falten, Nasolabialfalten, Hautelastizitaet, Ergrauung, Haardünnung, Hals-/Handalterung, Gesichtsvolumen-Verlust. Makeup-Warnung differenziert: bei jugendlich Wirkenden weiterhin streng getrennt, bei eindeutig Erwachsenen sind Mode und Stil jetzt legitime Alters-Indikatoren. Betrifft describePrompt, describeFallback, systemNormal und systemBoost.
+
 ## [1.2.8] — 2026-02-24
 
 ### Verbesserungen
