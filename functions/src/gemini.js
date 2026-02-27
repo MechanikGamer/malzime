@@ -265,7 +265,7 @@ async function runProfileWithFallback(vertexAI, prompt, temperature, mode, remai
           continue;
         }
 
-        /* SEC-004: Bounds auf Categories (max 20 Keys, Strings auf 500 Zeichen) */
+        /* SEC-004: Bounds auf Categories (max 20 Keys, Strings auf 800 Zeichen) */
         const catKeys = Object.keys(parsed.categories).slice(0, 20);
         const boundedCats = {};
         for (const key of catKeys) {
@@ -273,7 +273,7 @@ async function runProfileWithFallback(vertexAI, prompt, temperature, mode, remai
           if (cat && typeof cat === "object") {
             boundedCats[key] = {
               label: typeof cat.label === "string" ? cat.label.slice(0, 200) : String(key),
-              value: typeof cat.value === "string" ? cat.value.slice(0, 500) : "",
+              value: typeof cat.value === "string" ? cat.value.slice(0, 800) : "",
               confidence: typeof cat.confidence === "number" ? Math.max(0, Math.min(1, cat.confidence)) : 0.5,
             };
           }
