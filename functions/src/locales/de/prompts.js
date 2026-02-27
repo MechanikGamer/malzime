@@ -141,29 +141,54 @@ Sprachlich NIEMALS unter das Niveau für 10-14-Jährige gehen. Schärfe und Inha
 
 Bei Kindern/Jugendlichen: Zeige schonungslos wie Algorithmen Minderjährige auswerten und ausbeuten — TikTok-Sucht, Lootboxen, Influencer-Manipulation, Körperbild-Zerstörung, In-App-Käufe, Peer-Pressure durch Markenkleidung, Tracking über Schulwege. Aber auch: Risikoprofile für Drogenaffinität, Alkoholanfälligkeit, Mobbing-/Cybermobbing-Risiko, Gewalt- und Vandalismus-Potenzial, Radikalisierungsgefahr, Essstörungen, Spielsucht, finanzielle Manipulation (In-Game-Währungen, Abo-Fallen), unrealistische Beziehungsbilder durch Social Media. Beschreibe wie Behörden, Versicherungen und Tech-Konzerne solche Profile nutzen um Kinder präventiv zu kategorisieren und zu überwachen.`,
 
-  jsonSchema: `
-WICHTIG zum Ton: Schreibe IMMER in der zweiten Person direkt an die Person. NIEMALS "Basierend auf dem Foto...", "Die Person wird als..." oder passiv. IMMER direkt: "Du bist...", "Dein...", "Du trägst...", "Wir wissen, dass du...".
+  jsonSchemaNormal: `
+WICHTIG zum Ton: Schreibe IMMER in der zweiten Person direkt an die Person. NIEMALS "Basierend auf dem Foto...", "Die Person wird als..." oder passiv. IMMER direkt: "Du bist...", "Dein...", "Du trägst...". Sachlich und nüchtern wie ein echtes Scoring-System — keine Wertung, keine Emotion, nur Daten und Einordnung.
 
 Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
 {
   "categories": {
-    "alter_geschlecht": { "label": "Alter & Geschlecht", "value": "z.B. Du bist männlich, ca. 10 Jahre alt", "confidence": 0.0-1.0 },
+    "alter_geschlecht": { "label": "Alter & Geschlecht", "value": "Sachliche Einschätzung basierend auf den beschriebenen physischen Merkmalen. z.B. 'Du bist männlich, ca. 35 Jahre alt.'", "confidence": 0.0-1.0 },
     "herkunft": { "label": "Ethnische Herkunft", "value": "Leite AUSSCHLIESSLICH aus beschriebenem Hautton, Gesichtszügen und Haarstruktur ab. Sei differenziert: südasiatisch, ostasiatisch, südostasiatisch, nahöstlich, nordafrikanisch, subsaharisch-afrikanisch, mitteleuropäisch, südeuropäisch, lateinamerikanisch etc. Der Hintergrund/Ort sagt NICHTS über die Herkunft.", "confidence": 0.0-1.0 },
-    "einkommen": { "label": "Geschätztes Einkommen", "value": "Aus Kleidung, Accessoires, Umgebung und Lebensstil ableiten. Orientiere dich am österreichischen/mitteleuropäischen Lohnniveau: Studierende 400-1.200€, Berufseinsteiger 1.800-2.500€ brutto, Median aller Erwerbstätigen ca. 2.700€ brutto, Durchschnitt ca. 3.100€ brutto, Median Vollzeit ca. 3.900€ brutto. Bei Kindern/Jugendlichen: Familieneinkommen.", "confidence": 0.0-1.0 },
-    "bildung": { "label": "Bildungsniveau", "value": "direkt", "confidence": 0.0-1.0 },
-    "beziehungsstatus": { "label": "Beziehungsstatus", "value": "direkt", "confidence": 0.0-1.0 },
-    "interessen": { "label": "Interessen & Hobbys", "value": "3-5 konkrete Interessen/Hobbys mit kurzer Begründung warum die KI das denkt, z.B. 'Du interessierst dich für...'", "confidence": 0.0-1.0 },
-    "persoenlichkeit": { "label": "Persönlichkeitstyp", "value": "2-3 Sätze, Du bist...", "confidence": 0.0-1.0 },
-    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 aus mindestens 3 der 8 Kategorien (Psyche, Soziales, Sucht, Gesundheit, Finanzen, Beziehung, Beruf, Weltbild). Nur was zum Bild passt — nichts erzwingen.", "confidence": 0.0-1.0 },
-    "politisch": { "label": "Politische Tendenz", "value": "direkt", "confidence": 0.0-1.0 },
-    "gesundheit": { "label": "Gesundheit & Fitness", "value": "Körperlich UND psychisch: Fitness, Suchtverhalten, Schlaf, Stress, Essmuster, Haltung. Nur sichtbar Ableitbares.", "confidence": 0.0-1.0 },
-    "kaufkraft": { "label": "Kaufkraft & Konsum", "value": "2-3 Sätze, Du kaufst...", "confidence": 0.0-1.0 },
-    "verletzlichkeit": { "label": "Verletzlichkeiten", "value": "2-3 Sätze über konkrete persönliche Schwächen und wie Systeme sie ausnutzen. Direkt formulieren, nicht abstrakt.", "confidence": 0.0-1.0 },
-    "werbeprofil": { "label": "Werbeprofil", "value": "3-5 Sätze mit exakten Marken/Produkten, Dir wird Werbung für... angezeigt", "confidence": 0.0-1.0 }
+    "einkommen": { "label": "Geschätztes Einkommen", "value": "Nüchterne Einordnung wie ein Bonitäts-Scoring: Einkommensklasse und Konsumsegment aus Kleidung, Accessoires, Umgebung ableiten. Orientiere dich am österreichischen/mitteleuropäischen Lohnniveau: Studierende 400-1.200€, Berufseinsteiger 1.800-2.500€ brutto, Median Erwerbstätige ca. 2.700€ brutto, Median Vollzeit ca. 3.900€ brutto. Bei Kindern/Jugendlichen: Familieneinkommen.", "confidence": 0.0-1.0 },
+    "bildung": { "label": "Bildungsniveau", "value": "Sachliche Einordnung basierend auf sichtbaren Indikatoren (Kleidungsstil, Umgebung, Accessoires, Haltung).", "confidence": 0.0-1.0 },
+    "beziehungsstatus": { "label": "Beziehungsstatus", "value": "Nüchterne Ableitung aus sichtbaren Hinweisen (Ring, Begleitung, Setting).", "confidence": 0.0-1.0 },
+    "interessen": { "label": "Interessen & Hobbys", "value": "3-5 konkrete Interessen/Hobbys mit kurzer Begründung aus dem Bild. Datengetrieben: 'Die Analyse leitet ab, dass du...'", "confidence": 0.0-1.0 },
+    "persoenlichkeit": { "label": "Persönlichkeitstyp", "value": "Psychometrische Einordnung in 2-3 Sätzen, wie ein Big-Five-Assessment: Offenheit, Gewissenhaftigkeit, Extraversion, Verträglichkeit, emotionale Stabilität. Ausgewogen.", "confidence": 0.0-1.0 },
+    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 aus mindestens 3 der 8 Kategorien. Stärken UND Schwächen ausgewogen — wie ein echtes Assessment-Center. Nur was zum Bild passt.", "confidence": 0.0-1.0 },
+    "politisch": { "label": "Politische Tendenz", "value": "Sachliche Einordnung basierend auf sichtbaren Signalen (Kleidung, Umgebung, Stil). Nicht wertend.", "confidence": 0.0-1.0 },
+    "gesundheit": { "label": "Gesundheit & Fitness", "value": "Klinische Einschätzung wie eine Versicherungs-Risikobewertung: Fitness, Stresslevel, Haltung, Ernährungshinweise, Suchtrisiko. Nur sichtbar Ableitbares.", "confidence": 0.0-1.0 },
+    "kaufkraft": { "label": "Kaufkraft & Konsum", "value": "Marktsegment-Einordnung in 2-3 Sätzen: Preissensibilität, bevorzugte Markenklasse, Konsumschwerpunkte. Wie eine Kundenkartei.", "confidence": 0.0-1.0 },
+    "verletzlichkeit": { "label": "Verletzlichkeiten", "value": "2-3 Sätze über systemische Risikofaktoren: Wo ist dieses Profil verwundbar für Algorithmen, Datenbroker, Versicherungen? Sachlich wie ein Risikobericht.", "confidence": 0.0-1.0 },
+    "werbeprofil": { "label": "Werbeprofil", "value": "3-5 Sätze mit algorithmischen Ad-Kategorien wie sie in einem echten Google/Meta Ad-Manager stehen würden. Nüchtern, datengetrieben.", "confidence": 0.0-1.0 }
   },
-  "ad_targeting": ["Exaktes Produkt/Marke 1", "Exaktes Produkt/Marke 2", "...insgesamt 8-12 konkrete Einträge"],
-  "manipulation_triggers": ["Konkreter, ABWECHSLUNGSREICHER Trigger 1 — nicht immer FOMO/Peer-Vergleich", "...insgesamt 4-6 kreative, bildspezifische Einträge"],
-  "profileText": "10-15 Sätze. Sprich die Person DIREKT an: 'Du bist...', 'Wir wissen, dass du...', 'Dein Profil zeigt...'. Kein 'Basierend auf' oder Passiv. Maximal direkt, persönlich, konfrontativ. Benenne mindestens 2 unangenehme Wahrheiten über Gewohnheiten oder Schwächen — aber nur wenn das Bild Anhaltspunkte liefert."
+  "ad_targeting": ["Exaktes Produkt/Marke 1", "Exaktes Produkt/Marke 2", "...insgesamt 8-12 konkrete Einträge — wie eine echte Ad-Targeting-Liste"],
+  "manipulation_triggers": ["4-6 psychologische Muster die Systeme bei diesem Profil ausnutzen würden. Analytisch formuliert, wie eine Forschungsstudie — nicht reißerisch."],
+  "profileText": "5-8 Sätze. Liest sich wie ein Datenbroker-Profil oder Versicherungsbericht. Sachlich, direkt ('Du bist...'), ausgewogen — Stärken und Risikofaktoren. Keine Übertreibung, keine Wertung. Die nüchterne Wahrheit reicht um zu erschrecken."
+}`,
+
+  jsonSchemaBoost: `
+WICHTIG zum Ton: Schreibe IMMER in der zweiten Person direkt an die Person. NIEMALS "Basierend auf dem Foto...", "Die Person wird als..." oder passiv. IMMER direkt: "Du bist...", "Dein...", "Du trägst...", "Wir wissen, dass du...". Jedes Feld soll zynisch, spöttisch und unterhaltsam formuliert sein.
+
+Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
+{
+  "categories": {
+    "alter_geschlecht": { "label": "Alter & Geschlecht", "value": "Konfrontativ und direkt. z.B. 'Du bist männlich, ca. 35 — und es sieht aus als hättest du die letzten 10 Jahre im Zeitraffer gelebt.'", "confidence": 0.0-1.0 },
+    "herkunft": { "label": "Ethnische Herkunft", "value": "Leite AUSSCHLIESSLICH aus beschriebenem Hautton, Gesichtszügen und Haarstruktur ab. Sei differenziert: südasiatisch, ostasiatisch, südostasiatisch, nahöstlich, nordafrikanisch, subsaharisch-afrikanisch, mitteleuropäisch, südeuropäisch, lateinamerikanisch etc. Der Hintergrund/Ort sagt NICHTS über die Herkunft. Zeige wie Algorithmen Herkunft kommerziell verwerten.", "confidence": 0.0-1.0 },
+    "einkommen": { "label": "Geschätztes Einkommen", "value": "Was du verdienst, was du ausgibst, und die Kluft dazwischen. Orientiere dich am mitteleuropäischen Lohnniveau. Zeige wie Algorithmen dein Konsumverhalten gegen dich verwenden.", "confidence": 0.0-1.0 },
+    "bildung": { "label": "Bildungsniveau", "value": "Direkt und provokant. Zeige wie der Algorithmus Bildung aus Oberflächensignalen ableitet — und was das für die Werbung bedeutet die du siehst.", "confidence": 0.0-1.0 },
+    "beziehungsstatus": { "label": "Beziehungsstatus", "value": "Konfrontativ. Zeige wie Algorithmen Einsamkeit, Beziehungsstress oder Abhängigkeit kommerziell ausbeuten.", "confidence": 0.0-1.0 },
+    "interessen": { "label": "Interessen & Hobbys", "value": "3-5 konkrete Interessen — aber gezeigt als Suchtmuster und Ausbeut-Potenzial. 'Du interessierst dich für... und genau das macht dich angreifbar.'", "confidence": 0.0-1.0 },
+    "persoenlichkeit": { "label": "Persönlichkeitstyp", "value": "2-3 Sätze über deine psychologische Angriffsfläche. Wo bist du manipulierbar, wo vorhersagbar, wo schwach.", "confidence": 0.0-1.0 },
+    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 Schwächen aus mindestens 3 der 8 Kategorien. Jede visuell begründet, jede ein kommerzieller Hebel. Nur was zum Bild passt — nichts erzwingen.", "confidence": 0.0-1.0 },
+    "politisch": { "label": "Politische Tendenz", "value": "Provokant und direkt. Zeige wie politische Neigungen für Micro-Targeting und Meinungsmanipulation ausgenutzt werden.", "confidence": 0.0-1.0 },
+    "gesundheit": { "label": "Gesundheit & Fitness", "value": "Dein Risikoprofil für die Krankenversicherung. Was du deinem Körper antust, was es kostet, und wie Pharma-Konzerne davon profitieren.", "confidence": 0.0-1.0 },
+    "kaufkraft": { "label": "Kaufkraft & Konsum", "value": "2-3 Sätze darüber was du kaufst, warum du es kaufst, und wie Algorithmen dich dazu bringen mehr auszugeben als du solltest.", "confidence": 0.0-1.0 },
+    "verletzlichkeit": { "label": "Verletzlichkeiten", "value": "2-3 Sätze: Wo würde ein skrupelloser Algorithmus zuschlagen? Konkrete Schwachstellen und wie man sie maximal ausnutzt.", "confidence": 0.0-1.0 },
+    "werbeprofil": { "label": "Werbeprofil", "value": "3-5 Sätze mit der Werbung die dich am härtesten trifft — und warum du drauf reinfällst. Mit exakten Marken/Produkten.", "confidence": 0.0-1.0 }
+  },
+  "ad_targeting": ["Exaktes Produkt/Marke 1", "Exaktes Produkt/Marke 2", "...insgesamt 8-12 konkrete Einträge — provokant und überzeichnet"],
+  "manipulation_triggers": ["Konkreter, ABWECHSLUNGSREICHER Trigger 1 — nicht immer FOMO/Peer-Vergleich", "...insgesamt 4-6 kreative, bildspezifische Einträge — provokant und persönlich"],
+  "profileText": "10-15 Sätze. Sprich die Person DIREKT an: 'Du bist...', 'Wir wissen, dass du...', 'Dein Profil zeigt...'. Kein 'Basierend auf' oder Passiv. Zynisch, spöttisch, unterhaltsam. Jeder Satz ein Treffer. Benenne mindestens 2 unangenehme Wahrheiten über Gewohnheiten oder Schwächen — aber nur wenn das Bild Anhaltspunkte liefert."
 }`,
 
   /* ── Prompt-Bausteine ── */

@@ -189,7 +189,7 @@ function buildDescriptionFromLabels(visionResult, exif, lang) {
   return parts.length > 0 ? parts.join(" ") : null;
 }
 
-function buildPrompt(prompts, systemContext, imageDescription, labelsContext, exifContext, privacyContext) {
+function buildPrompt(prompts, systemContext, imageDescription, labelsContext, exifContext, privacyContext, schema) {
   /* SEC-003: Dynamische Inhalte escapen um Prompt-Injection via XML-Tags zu verhindern */
   const safeDesc = escapeXml(imageDescription);
   const safeLabels = labelsContext ? escapeXml(labelsContext) : "";
@@ -206,7 +206,7 @@ ${safeDesc}
 ${safeLabels ? `\n<vision_labels>${safeLabels}</vision_labels>` : ""}${safeExif ? `\n<exif_daten>${safeExif}</exif_daten>` : ""}${safePrivacy ? `\n<privacy_risiken>${safePrivacy}</privacy_risiken>` : ""}
 
 ${prompts.workshopNote}
-${prompts.jsonSchema}`;
+${schema}`;
 }
 
 async function runProfileWithFallback(vertexAI, prompt, temperature, mode, remainingBudget) {
@@ -332,7 +332,8 @@ async function generateBothProfiles(imageDescription, visionLabels, exifData, pr
     imageDescription,
     labelsContext,
     exifContext,
-    privacyContext
+    privacyContext,
+    prompts.jsonSchemaNormal
   );
   const boostPrompt = buildPrompt(
     prompts,
@@ -340,7 +341,8 @@ async function generateBothProfiles(imageDescription, visionLabels, exifData, pr
     imageDescription,
     labelsContext,
     exifContext,
-    privacyContext
+    privacyContext,
+    prompts.jsonSchemaBoost
   );
 
   const [normal, boost] = await Promise.all([
