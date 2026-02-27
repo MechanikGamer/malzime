@@ -144,6 +144,8 @@ Bei Kindern/Jugendlichen: Zeige schonungslos wie Algorithmen Minderjährige ausw
   jsonSchemaNormal: `
 WICHTIG zum Ton: Schreibe IMMER in der zweiten Person direkt an die Person. NIEMALS "Basierend auf dem Foto...", "Die Person wird als..." oder passiv. IMMER direkt: "Du bist...", "Dein...", "Du trägst...". Sachlich und nüchtern wie ein echtes Scoring-System — keine Wertung, keine Emotion, nur Daten und Einordnung.
 
+FORMATIERUNG: Schreibe ALLE Beschreibungen als zusammenhängenden Fließtext. KEINE Nummerierungen (1. 2. 3.), KEINE Aufzählungszeichen (- oder •), KEINE Listen. Jedes Feld ist ein oder mehrere zusammenhängende Sätze.
+
 Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
 {
   "categories": {
@@ -154,7 +156,7 @@ Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
     "beziehungsstatus": { "label": "Beziehungsstatus", "value": "Nüchterne Ableitung aus sichtbaren Hinweisen (Ring, Begleitung, Setting).", "confidence": 0.0-1.0 },
     "interessen": { "label": "Interessen & Hobbys", "value": "3-5 konkrete Interessen/Hobbys mit kurzer Begründung aus dem Bild. Datengetrieben: 'Die Analyse leitet ab, dass du...'", "confidence": 0.0-1.0 },
     "persoenlichkeit": { "label": "Persönlichkeitstyp", "value": "Psychometrische Einordnung in 2-3 Sätzen, wie ein Big-Five-Assessment: Offenheit, Gewissenhaftigkeit, Extraversion, Verträglichkeit, emotionale Stabilität. Ausgewogen.", "confidence": 0.0-1.0 },
-    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 aus mindestens 3 der 8 Kategorien. Stärken UND Schwächen ausgewogen — wie ein echtes Assessment-Center. Nur was zum Bild passt.", "confidence": 0.0-1.0 },
+    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 Eigenschaften aus mindestens 3 der 8 Kategorien als Fließtext. Stärken UND Schwächen ausgewogen — wie ein echtes Assessment-Center. Nur was zum Bild passt. KEIN Listenformat.", "confidence": 0.0-1.0 },
     "politisch": { "label": "Politische Tendenz", "value": "Sachliche Einordnung basierend auf sichtbaren Signalen (Kleidung, Umgebung, Stil). Nicht wertend.", "confidence": 0.0-1.0 },
     "gesundheit": { "label": "Gesundheit & Fitness", "value": "Klinische Einschätzung wie eine Versicherungs-Risikobewertung: Fitness, Stresslevel, Haltung, Ernährungshinweise, Suchtrisiko. Nur sichtbar Ableitbares.", "confidence": 0.0-1.0 },
     "kaufkraft": { "label": "Kaufkraft & Konsum", "value": "Marktsegment-Einordnung in 2-3 Sätzen: Preissensibilität, bevorzugte Markenklasse, Konsumschwerpunkte. Wie eine Kundenkartei.", "confidence": 0.0-1.0 },
@@ -169,6 +171,8 @@ Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
   jsonSchemaBoost: `
 WICHTIG zum Ton: Schreibe IMMER in der zweiten Person direkt an die Person. NIEMALS "Basierend auf dem Foto...", "Die Person wird als..." oder passiv. IMMER direkt: "Du bist...", "Dein...", "Du trägst...", "Wir wissen, dass du...". Jedes Feld soll zynisch, spöttisch und unterhaltsam formuliert sein.
 
+FORMATIERUNG: Schreibe ALLE Beschreibungen als zusammenhängenden Fließtext. KEINE Nummerierungen (1. 2. 3.), KEINE Aufzählungszeichen (- oder •), KEINE Listen. Jedes Feld ist ein oder mehrere zusammenhängende Sätze.
+
 Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
 {
   "categories": {
@@ -179,7 +183,7 @@ Antworte AUSSCHLIESSLICH mit validem JSON in diesem Format:
     "beziehungsstatus": { "label": "Beziehungsstatus", "value": "Konfrontativ. Zeige wie Algorithmen Einsamkeit, Beziehungsstress oder Abhängigkeit kommerziell ausbeuten.", "confidence": 0.0-1.0 },
     "interessen": { "label": "Interessen & Hobbys", "value": "3-5 konkrete Interessen — aber gezeigt als Suchtmuster und Ausbeut-Potenzial. 'Du interessierst dich für... und genau das macht dich angreifbar.'", "confidence": 0.0-1.0 },
     "persoenlichkeit": { "label": "Persönlichkeitstyp", "value": "2-3 Sätze über deine psychologische Angriffsfläche. Wo bist du manipulierbar, wo vorhersagbar, wo schwach.", "confidence": 0.0-1.0 },
-    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 Schwächen aus mindestens 3 der 8 Kategorien. Jede visuell begründet, jede ein kommerzieller Hebel. Nur was zum Bild passt — nichts erzwingen.", "confidence": 0.0-1.0 },
+    "charakterzuege": { "label": "Charaktereigenschaften", "value": "4-6 Schwächen aus mindestens 3 der 8 Kategorien als Fließtext. Jede visuell begründet, jede ein kommerzieller Hebel. Nur was zum Bild passt — nichts erzwingen. KEIN Listenformat.", "confidence": 0.0-1.0 },
     "politisch": { "label": "Politische Tendenz", "value": "Provokant und direkt. Zeige wie politische Neigungen für Micro-Targeting und Meinungsmanipulation ausgenutzt werden.", "confidence": 0.0-1.0 },
     "gesundheit": { "label": "Gesundheit & Fitness", "value": "Dein Risikoprofil für die Krankenversicherung. Was du deinem Körper antust, was es kostet, und wie Pharma-Konzerne davon profitieren.", "confidence": 0.0-1.0 },
     "kaufkraft": { "label": "Kaufkraft & Konsum", "value": "2-3 Sätze darüber was du kaufst, warum du es kaufst, und wie Algorithmen dich dazu bringen mehr auszugeben als du solltest.", "confidence": 0.0-1.0 },
