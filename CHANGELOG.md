@@ -8,7 +8,11 @@ Format basiert auf [Keep a Changelog](https://keepachangelog.com/de/1.1.0/).
 
 ### Bugfixes
 
-- **Altersschaetzung bei Erwachsenen 25+**: Personen ueber 25 wurden systematisch zu jung geschaetzt. Ursache: Die Beschreibungs-Prompts enthielten nur Entwicklungsmerkmale (Kind vs. Erwachsener) aber keine Alterungsmerkmale (30 vs. 50). Erweitert um: Falten, Nasolabialfalten, Hautelastizitaet, Ergrauung, Haardünnung, Hals-/Handalterung, Gesichtsvolumen-Verlust. Makeup-Warnung differenziert: bei jugendlich Wirkenden weiterhin streng getrennt, bei eindeutig Erwachsenen sind Mode und Stil jetzt legitime Alters-Indikatoren. Betrifft describePrompt, describeFallback, systemNormal und systemBoost.
+- **Altersschaetzung bei Erwachsenen 25+ (umfassende Ueberarbeitung)**: Personen ueber 25 wurden systematisch zu jung geschaetzt — oft 10 Jahre daneben. Drei Ursachen identifiziert und behoben:
+  - **Fehlende Alterungsmerkmale:** Beschreibungs-Prompts (describePrompt + describeFallback) massiv erweitert um: Jowls/Haengewangen, Marionetten-Linien, Oberlid-Erschlaffung, Lippenvolumen-Verlust, Porengröße, Handvenen-Sichtbarkeit, Hautverdünnung/-transparenz, Sehnen-Sichtbarkeit, Halsbaender, Dekollete-Textur, Ergrauungs-Prozentanteil, Augenbrauen-Ausdünnung, Haarstruktur-Veraenderungen. Haende und Hals explizit als zuverlaessigste Indikatoren hervorgehoben.
+  - **Kalibrierungs-Anker:** Neue Zuordnungs-Skala in allen 4 Prompts: Glatte Haut = unter 25, erste Linien = 28-35, deutliche Falten + Volumenverlust = 35-45, Jowls + Halsfalten + Lid-Erschlaffung = 45-55, tiefe Falten + Hautverdünnung = 55+. Gibt dem Modell eine Referenz statt vage Merkmale.
+  - **Anti-Hoeflichkeits-Bias:** Explizite Anweisung in Beschreibungs- und System-Prompts: "Alterungsmerkmale ehrlich beschreiben ist KEINE Beleidigung — systematisches Juenger-Schaetzen ist ein Messfehler." Gemini tendiert dazu, schmeichelhaft zu sein — das wird jetzt direkt adressiert.
+  - **Differenzierte Makeup-Regel:** Bei jugendlich Wirkenden weiterhin streng getrennt (Kinderschutz). Bei eindeutig Erwachsenen sind Mode und Stil jetzt legitime Alters-Indikatoren.
 
 ## [1.2.8] — 2026-02-24
 
