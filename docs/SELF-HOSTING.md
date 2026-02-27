@@ -143,7 +143,7 @@ Die UI-Texte, Gemini-Prompts und Tier-Profile liegen in Locale-Dateien:
 | Dateien | Inhalt |
 |---------|--------|
 | `public/locales/de.json` | Alle Frontend-UI-Strings |
-| `functions/src/locales/de/prompts.js` | Gemini-Prompts (System-Prompts, Labels, Schema) |
+| `functions/src/locales/de/prompts.js` | Gemini-Prompts (System-Prompts, Labels, jsonSchemaNormal + jsonSchemaBoost) |
 | `functions/src/locales/de/animals.js` | Tier-Easter-Egg-Profile |
 
 Wenn du die Texte anpassen oder eine neue Sprache hinzufuegen willst:

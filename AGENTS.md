@@ -45,7 +45,7 @@ functions/src/       Firebase Cloud Functions 2nd Gen (Node 24, europe-west1)
   i18n.js            Backend-Locale-Loader (loadPrompts, loadAnimals, resolveLanguage)
   locales/           Backend-Locale-Dateien
     manifest.json    Verfuegbare Sprachen + Default
-    de/prompts.js    Deutsche Gemini-Prompts (System-Prompts, Labels, JSON-Schema)
+    de/prompts.js    Deutsche Gemini-Prompts (System-Prompts, Labels, jsonSchemaNormal + jsonSchemaBoost)
     de/animals.js    Deutsche Tier-Easter-Egg-Profile
   __tests__/         Jest Unit-Tests
 
@@ -57,7 +57,7 @@ docs/                Setup-Dokumentation
 
 - `cd functions && npm install` — install backend dependencies
 - `npm install` (root) — install frontend test/lint dependencies (Vitest, ESLint, Prettier)
-- `cd functions && npm test` — run Jest backend unit tests (266 tests)
+- `cd functions && npm test` — run Jest backend unit tests (269 tests)
 - `npm run test:frontend` — run Vitest frontend unit tests (139 tests)
 - `npm run test:e2e` — run Playwright E2E smoke tests (2 tests)
 - `cd functions && npm run lint` — ESLint backend
